@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Team Performance - CRM Pro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#4d44e3",
+                        "on-secondary-fixed": "#001a42",
+                        "surface-container-low": "#f0f3ff",
+                        "on-tertiary-fixed-variant": "#5516be",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface-variant": "#464555",
+                        "primary-container": "#4f46e5",
+                        "primary-fixed-dim": "#c3c0ff",
+                        "background": "#f9f9ff",
+                        "tertiary-fixed-dim": "#d0bcff",
+                        "tertiary-container": "#6f3dd9",
+                        "tertiary-fixed": "#e9ddff",
+                        "inverse-primary": "#c3c0ff",
+                        "outline": "#777587",
+                        "on-primary-container": "#dad7ff",
+                        "error-container": "#ffdad6",
+                        "inverse-on-surface": "#ecf1ff",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed-variant": "#3323cc",
+                        "surface-container-highest": "#d8e3fb",
+                        "outline-variant": "#c7c4d8",
+                        "on-tertiary-fixed": "#23005c",
+                        "on-error-container": "#93000a",
+                        "on-secondary": "#ffffff",
+                        "secondary-fixed-dim": "#adc6ff",
+                        "secondary-fixed": "#d8e2ff",
+                        "inverse-surface": "#263143",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed": "#0f0069",
+                        "primary": "#3525cd",
+                        "surface-bright": "#f9f9ff",
+                        "on-tertiary": "#ffffff",
+                        "surface-variant": "#d8e3fb",
+                        "on-secondary-fixed-variant": "#004395",
+                        "surface-container-high": "#dee8ff",
+                        "primary-fixed": "#e2dfff",
+                        "surface": "#f9f9ff",
+                        "surface-container": "#e7eeff",
+                        "on-background": "#111c2d",
+                        "tertiary": "#571ac0",
+                        "surface-dim": "#cfdaf2",
+                        "error": "#ba1a1a",
+                        "on-tertiary-container": "#e3d5ff",
+                        "on-secondary-container": "#fefcff",
+                        "secondary-container": "#2170e4",
+                        "on-surface": "#111c2d",
+                        "secondary": "#0058be"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "20px",
+                        "unit": "4px",
+                        "lg": "24px",
+                        "xl": "32px",
+                        "container-padding": "24px",
+                        "xs": "4px",
+                        "md": "16px",
+                        "sm": "8px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "display-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill-1 {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #c7c4d8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #777587; }
+        
+        /* Subtle shadow for active cards */
+        .card-hover:hover {
+            box-shadow: 0px 10px 15px -3px rgba(0, 0, 0, 0.05);
+            transform: translateY(-2px);
+            transition: all 0.2s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased font-body-md h-screen flex overflow-hidden">
+<!-- SideNavBar (from JSON) -->
+<nav class="hidden md:flex flex-col bg-surface h-screen w-[260px] py-md border-r border-outline-variant/30 flex-shrink-0 z-10 relative">
+<div class="px-lg mb-8 flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined icon-fill-1 text-2xl" data-icon="hub">hub</span>
+</div>
+<div>
+<h1 class="font-headline-sm text-headline-sm font-black text-primary">CRM Pro</h1>
+<p class="font-label-md text-label-md text-on-surface-variant">Enterprise Tier</p>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto px-2 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="leaderboard">leaderboard</span>
+<span class="font-label-md text-label-md">Leads</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-md text-label-md">Contacts</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="business">business</span>
+<span class="font-label-md text-label-md">Companies</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="handshake">handshake</span>
+<span class="font-label-md text-label-md">Deals</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="task_alt">task_alt</span>
+<span class="font-label-md text-label-md">Tasks</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+<span class="font-label-md text-label-md">Calendar</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="bolt">bolt</span>
+<span class="font-label-md text-label-md">Automations</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="font-label-md text-label-md">Notifications</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 bg-primary-container text-on-primary-container font-semibold rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined icon-fill-1" data-icon="analytics">analytics</span>
+<span class="font-label-md text-label-md">Analytics</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="font-label-md text-label-md">Reports</span>
+</a>
+</div>
+<div class="px-2 mt-auto pt-4 border-t border-outline-variant/30">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+<!-- TopNavBar (from JSON, modified for Analytics intent) -->
+<header class="sticky top-0 w-full flex justify-between items-center px-lg h-16 bg-surface/80 backdrop-blur-xl z-40 border-b border-outline-variant/30">
+<div class="flex items-center gap-4">
+<button class="md:hidden text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h2 class="font-headline-md text-headline-md font-bold text-on-surface hidden md:block">Team Performance</h2>
+</div>
+<div class="flex-1 max-w-md mx-4 hidden md:flex items-center">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
+<input class="w-full h-10 pl-10 pr-4 rounded-lg bg-surface-container-lowest border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-shadow text-body-md font-body-md" placeholder="Search analytics..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-variant/50 p-2 rounded-full">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-variant/50 p-2 rounded-full relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-1 right-1 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<div class="h-6 w-px bg-outline-variant/50 mx-2"></div>
+<button class="flex items-center gap-2 bg-surface-container-low hover:bg-surface-container-high px-3 py-1.5 rounded-full border border-outline-variant/30 transition-colors">
+<img class="w-6 h-6 rounded-full object-cover" data-alt="Professional headshot of a female sales executive with short dark hair, wearing a navy blazer, well-lit studio lighting, smiling slightly, clean white background, high-end corporate style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnm3fhXsWY5oJjrvcYW4bGNL169bR8Yo-VCY17efIvHRkp_1jJRMXrG1HMqQqWlHbhzOL-ykdxB_iN_oFdKxQ4xz6H0ukj_IF1e1irL2e92CFyr4vhUm7HwzaiNztvdEqVIYJI2No1HbsJpLu5Yv9pgcLeCxNenbq0u8WITp9IhAqLiLHic_s-zMF9x3KA8CQ08EEH5BHmp547w2t4fP03OpLCjgLHotyo8Q9kOsIywckVqrwDfLSTfA"/>
+<span class="font-label-md text-label-md text-on-surface hidden lg:block">Sarah Jenkins</span>
+<span class="material-symbols-outlined text-sm text-outline hidden lg:block" data-icon="expand_more">expand_more</span>
+</button>
+</div>
+</header>
+<!-- Scrollable Canvas -->
+<div class="flex-1 overflow-y-auto p-4 md:p-lg lg:p-container-padding pb-24 md:pb-lg">
+<!-- Filters & Actions -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-lg gap-4">
+<div class="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant rounded-lg p-1">
+<button class="px-4 py-1.5 rounded-md bg-surface-container-highest text-on-surface font-label-md text-label-md">Q3 2023</button>
+<button class="px-4 py-1.5 rounded-md text-on-surface-variant hover:bg-surface-container-low font-label-md text-label-md">Q2 2023</button>
+<button class="px-4 py-1.5 rounded-md text-on-surface-variant hover:bg-surface-container-low font-label-md text-label-md">YTD</button>
+<div class="w-px h-4 bg-outline-variant mx-1"></div>
+<button class="px-3 py-1.5 rounded-md text-on-surface-variant hover:bg-surface-container-low flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]" data-icon="calendar_month">calendar_month</span>
+</button>
+</div>
+<div class="flex gap-3 w-full sm:w-auto">
+<button class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-on-surface font-label-md text-label-md hover:bg-surface-container-low transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="download">download</span>
+                        Export
+                    </button>
+<button class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-lg font-label-md text-label-md hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-sm shadow-primary/20 bg-gradient-to-b from-primary to-[#2a1d9b]">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+                        New Target
+                    </button>
+</div>
+</div>
+<!-- Top KPIs -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-md mb-lg">
+<!-- KPI 1 -->
+<div class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-4 card-hover">
+<div class="flex justify-between items-start mb-2">
+<span class="font-label-md text-label-md text-on-surface-variant">Total Revenue</span>
+<div class="p-1.5 rounded-md bg-secondary-container/20 text-secondary-container">
+<span class="material-symbols-outlined text-[20px]" data-icon="attach_money">attach_money</span>
+</div>
+</div>
+<h3 class="font-display-lg text-display-lg text-on-surface mb-1">$4.2M</h3>
+<div class="flex items-center gap-2">
+<span class="flex items-center text-sm font-semibold text-tertiary">
+<span class="material-symbols-outlined text-[16px]" data-icon="trending_up">trending_up</span>
+                            12.5%
+                        </span>
+<span class="font-body-sm text-body-sm text-outline">vs last quarter</span>
+</div>
+</div>
+<!-- KPI 2 -->
+<div class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-4 card-hover">
+<div class="flex justify-between items-start mb-2">
+<span class="font-label-md text-label-md text-on-surface-variant">Deals Won</span>
+<div class="p-1.5 rounded-md bg-primary-container/20 text-primary">
+<span class="material-symbols-outlined text-[20px]" data-icon="handshake">handshake</span>
+</div>
+</div>
+<h3 class="font-display-lg text-display-lg text-on-surface mb-1">148</h3>
+<div class="flex items-center gap-2">
+<span class="flex items-center text-sm font-semibold text-tertiary">
+<span class="material-symbols-outlined text-[16px]" data-icon="trending_up">trending_up</span>
+                            8.2%
+                        </span>
+<span class="font-body-sm text-body-sm text-outline">vs last quarter</span>
+</div>
+</div>
+<!-- KPI 3 -->
+<div class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-4 card-hover">
+<div class="flex justify-between items-start mb-2">
+<span class="font-label-md text-label-md text-on-surface-variant">Win Rate</span>
+<div class="p-1.5 rounded-md bg-tertiary-container/20 text-tertiary">
+<span class="material-symbols-outlined text-[20px]" data-icon="pie_chart">pie_chart</span>
+</div>
+</div>
+<h3 class="font-display-lg text-display-lg text-on-surface mb-1">32.4%</h3>
+<div class="flex items-center gap-2">
+<span class="flex items-center text-sm font-semibold text-error">
+<span class="material-symbols-outlined text-[16px]" data-icon="trending_down">trending_down</span>
+                            1.1%
+                        </span>
+<span class="font-body-sm text-body-sm text-outline">vs last quarter</span>
+</div>
+</div>
+<!-- KPI 4 -->
+<div class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-4 card-hover">
+<div class="flex justify-between items-start mb-2">
+<span class="font-label-md text-label-md text-on-surface-variant">Target Achievement</span>
+<div class="p-1.5 rounded-md bg-surface-container-highest text-on-surface">
+<span class="material-symbols-outlined text-[20px]" data-icon="flag">flag</span>
+</div>
+</div>
+<h3 class="font-display-lg text-display-lg text-on-surface mb-1">94%</h3>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full mt-3 overflow-hidden">
+<div class="bg-primary h-full rounded-full w-[94%]"></div>
+</div>
+</div>
+</div>
+<!-- Main Charts Row -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-md mb-lg">
+<!-- Revenue Trend Chart -->
+<div class="lg:col-span-2 bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-5 flex flex-col">
+<div class="flex justify-between items-center mb-6">
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Revenue Over Time</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Cumulative vs Target</p>
+</div>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+<div class="flex-1 min-h-[300px] relative w-full">
+<canvas id="revenueChart"></canvas>
+</div>
+</div>
+<!-- Activity Breakdown -->
+<div class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-5 flex flex-col">
+<div class="flex justify-between items-center mb-6">
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Activity Breakdown</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">By type this quarter</p>
+</div>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+<div class="flex-1 flex flex-col justify-center items-center min-h-[250px] relative w-full mb-4">
+<canvas id="activityChart"></canvas>
+<!-- Center overlay for doughnut -->
+<div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none mt-4">
+<span class="font-display-lg text-display-lg text-on-surface leading-none">4.2k</span>
+<span class="font-label-md text-label-md text-on-surface-variant">Total</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-2 mt-auto">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-[#3525cd]"></div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Calls (45%)</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-[#0058be]"></div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Emails (30%)</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-[#571ac0]"></div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Meetings (15%)</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-[#c7c4d8]"></div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Other (10%)</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Leaderboard Table -->
+<div class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl overflow-hidden flex flex-col">
+<div class="p-5 border-b border-outline-variant/30 flex justify-between items-center bg-surface-bright">
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Rep Leaderboard</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Ranked by Revenue Generated</p>
+</div>
+<div class="flex gap-2">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-outline text-[18px]" data-icon="search">search</span>
+<input class="h-8 pl-8 pr-3 rounded-md bg-surface border border-outline-variant/50 text-body-sm focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" placeholder="Find rep..." type="text"/>
+</div>
+<button class="flex items-center gap-1 px-3 py-1.5 text-on-surface-variant bg-surface-container border border-outline-variant/50 rounded-md hover:bg-surface-container-high transition-colors font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]" data-icon="filter_list">filter_list</span>
+                            Filter
+                        </button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse min-w-[800px]">
+<thead>
+<tr class="bg-surface-container-low text-on-surface-variant font-label-md text-label-md uppercase tracking-wider">
+<th class="p-4 font-semibold w-16 text-center">Rank</th>
+<th class="p-4 font-semibold">Sales Representative</th>
+<th class="p-4 font-semibold text-right">Revenue</th>
+<th class="p-4 font-semibold text-center">Deals</th>
+<th class="p-4 font-semibold text-center">Win Rate</th>
+<th class="p-4 font-semibold w-48">Target Attainment</th>
+</tr>
+</thead>
+<tbody class="font-body-md text-on-surface divide-y divide-outline-variant/20">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group cursor-pointer">
+<td class="p-4 text-center font-semibold text-primary">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center mx-auto">1</div>
+</td>
+<td class="p-4">
+<div class="flex items-center gap-3">
+<img class="w-10 h-10 rounded-full object-cover border border-outline-variant/30" data-alt="Professional headshot of a young male sales rep, short blonde hair, wearing a light blue dress shirt, bright studio lighting, smiling, white background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZciIT5AA28ybXCvlKzBRlTjlrfoSB2yUkziOjCN7_cVdZ0cyUVJULuVYr8XjZEOqG2f2fAiq9NTrhx4ExY80KNpP6nJ1n7v2k6gXtCSF3ar8NNyCIsi07j1Qef0zSxUdGJZAjTnQAQ4ZfreZjLIOt05Z0YgNGRTmm8WTWMnFpdsJb20siyYuX8XL2YXeujTewSiVekc81pKpqw_H60Qsuj2ETULbNxCChPbn-iJ4d3peTZ1qw2fzP_g"/>
+<div>
+<p class="font-semibold text-on-surface group-hover:text-primary transition-colors">Marcus Chen</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Enterprise Team</p>
+</div>
+</div>
+</td>
+<td class="p-4 text-right font-semibold">$1,240,500</td>
+<td class="p-4 text-center">32</td>
+<td class="p-4 text-center">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-surface-container-high text-tertiary">42%</span>
+</td>
+<td class="p-4">
+<div class="flex items-center gap-2">
+<div class="flex-1 bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-tertiary h-full rounded-full" style="width: 112%"></div>
+</div>
+<span class="font-label-md text-label-md font-semibold text-tertiary">112%</span>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group cursor-pointer">
+<td class="p-4 text-center font-semibold text-on-surface-variant">2</td>
+<td class="p-4">
+<div class="flex items-center gap-3">
+<img class="w-10 h-10 rounded-full object-cover border border-outline-variant/30" data-alt="Professional headshot of an older female sales director, wearing glasses and a grey blazer, professional studio lighting, confident expression, white background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCtFDGCYK99uJqJ3AMhU1IFNlBestJVXS2ONk4BgH5AaGPmVSJX11supsQqvjZThvckucPQ3MKQzvQkL0XQEKb0gVHFn0z8Kcx5yA4peMm7HpwfWa5p0ptNMWlcNNZcDtFKDiO9db192V1zq6EdwQw9AXBlzAmZ7Sz2TMKAKtEeMBzRmNnZoLlghgghdpjk47YAD7LBXBXZ-0i7sLGO7-dzkLF6m1p-gA4QAJ6HY3jva0ANRXpDH5zoyg"/>
+<div>
+<p class="font-semibold text-on-surface group-hover:text-primary transition-colors">Elena Rodriguez</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Mid-Market Team</p>
+</div>
+</div>
+</td>
+<td class="p-4 text-right font-semibold">$985,200</td>
+<td class="p-4 text-center">45</td>
+<td class="p-4 text-center">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-surface-container-high text-on-surface">38%</span>
+</td>
+<td class="p-4">
+<div class="flex items-center gap-2">
+<div class="flex-1 bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 98%"></div>
+</div>
+<span class="font-label-md text-label-md font-semibold">98%</span>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group cursor-pointer">
+<td class="p-4 text-center font-semibold text-on-surface-variant">3</td>
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-secondary-container/20 text-secondary-container flex items-center justify-center font-bold font-headline-md border border-outline-variant/30">
+                                            JD
+                                        </div>
+<div>
+<p class="font-semibold text-on-surface group-hover:text-primary transition-colors">James Donovan</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">SMB Team</p>
+</div>
+</div>
+</td>
+<td class="p-4 text-right font-semibold">$842,000</td>
+<td class="p-4 text-center">62</td>
+<td class="p-4 text-center">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-surface-container-high text-on-surface">31%</span>
+</td>
+<td class="p-4">
+<div class="flex items-center gap-2">
+<div class="flex-1 bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 92%"></div>
+</div>
+<span class="font-label-md text-label-md font-semibold">92%</span>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group cursor-pointer">
+<td class="p-4 text-center font-semibold text-on-surface-variant">4</td>
+<td class="p-4">
+<div class="flex items-center gap-3">
+<img class="w-10 h-10 rounded-full object-cover border border-outline-variant/30" data-alt="Professional headshot of a young female sales rep, long dark hair, wearing a white blouse, friendly smile, warm studio lighting, white background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDS4GF8bUhNQghkn555nO0xlfyxvkwpJ3shGQQuHjjsMxqUdowr25WnzlwPbFT-QX8IfYoR2VRMdv4xK_JazkTqmrm9WXj4BfvWqyT2wcQhDi7leeL-idDCYgxc1kVk1z03QgmVnmUzokTVNpxJu-WWAX5S5M-WqQRD3HQVJBsE9LEzxIf3acqBkJLiPltZdEPrpfWqZqhaDWWGCKDbrdoiyGig8KSchgfBFZvtbvvh9-bV0IYp-1GqOA"/>
+<div>
+<p class="font-semibold text-on-surface group-hover:text-primary transition-colors">Aisha Patel</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Enterprise Team</p>
+</div>
+</div>
+</td>
+<td class="p-4 text-right font-semibold">$750,000</td>
+<td class="p-4 text-center">18</td>
+<td class="p-4 text-center">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-error-container/50 text-on-error-container">25%</span>
+</td>
+<td class="p-4">
+<div class="flex items-center gap-2">
+<div class="flex-1 bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-outline h-full rounded-full" style="width: 75%"></div>
+</div>
+<span class="font-label-md text-label-md font-semibold text-outline">75%</span>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 border-t border-outline-variant/30 flex justify-center bg-surface-bright">
+<button class="text-primary font-label-md text-label-md hover:underline">View All Representatives</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Mobile BottomNavBar (Hidden on md and up) -->
+<nav class="md:hidden fixed bottom-0 w-full bg-surface/90 backdrop-blur-md border-t border-outline-variant/30 flex justify-around items-center h-16 z-50 pb-safe">
+<a class="flex flex-col items-center justify-center w-full h-full text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="dashboard">dashboard</span>
+<span class="text-[10px] font-semibold leading-none">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="handshake">handshake</span>
+<span class="text-[10px] font-semibold leading-none">Deals</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full text-primary" href="#">
+<div class="bg-primary-container text-on-primary-container px-4 py-1 rounded-full mb-1">
+<span class="material-symbols-outlined icon-fill-1 text-xl block" data-icon="analytics">analytics</span>
+</div>
+<span class="text-[10px] font-semibold leading-none">Stats</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="notifications">notifications</span>
+<span class="text-[10px] font-semibold leading-none">Alerts</span>
+</a>
+</nav>
+<script>
+        // Initialize Chart.js styling variables based on Tailwind config
+        const primaryColor = '#3525cd';
+        const primaryContainer = '#4f46e5';
+        const secondaryColor = '#0058be';
+        const tertiaryColor = '#571ac0';
+        const outlineColor = '#c7c4d8';
+        const textColor = '#111c2d';
+        const textVariant = '#464555';
+        
+        // Common chart options
+        Chart.defaults.font.family = 'Inter, sans-serif';
+        Chart.defaults.color = textVariant;
+        
+        // Revenue Trend Chart
+        const ctxRev = document.getElementById('revenueChart').getContext('2d');
+        
+        // Create gradient for the area chart
+        const gradient = ctxRev.createLinearGradient(0, 0, 0, 300);
+        gradient.addColorStop(0, 'rgba(53, 37, 205, 0.2)'); // primary/20
+        gradient.addColorStop(1, 'rgba(53, 37, 205, 0)');
+
+        new Chart(ctxRev, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
+                datasets: [
+                    {
+                        label: 'Actual Revenue',
+                        data: [1.2, 1.5, 1.4, 2.1, 2.4, 2.8, 3.2, 3.8, 4.2],
+                        borderColor: primaryColor,
+                        backgroundColor: gradient,
+                        borderWidth: 3,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: primaryColor,
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Target',
+                        data: [1.5, 1.8, 2.0, 2.3, 2.6, 2.9, 3.2, 3.5, 4.5],
+                        borderColor: outlineColor,
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        align: 'end',
+                        labels: {
+                            usePointStyle: true,
+                            boxWidth: 8,
+                            padding: 20,
+                            font: { size: 12, weight: '600' }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(17, 28, 45, 0.9)', // on-surface
+                        titleFont: { size: 13, family: 'Inter' },
+                        bodyFont: { size: 13, family: 'Inter' },
+                        padding: 12,
+                        cornerRadius: 8,
+                        displayColors: true,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += '$' + context.parsed.y + 'M';
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false, drawBorder: false },
+                        ticks: { font: { size: 12 } }
+                    },
+                    y: {
+                        grid: {
+                            color: 'rgba(199, 196, 216, 0.3)', // outline-variant/30
+                            drawBorder: false,
+                            borderDash: [5, 5]
+                        },
+                        ticks: {
+                            font: { size: 12 },
+                            callback: function(value) { return '$' + value + 'M'; }
+                        },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Activity Breakdown Doughnut Chart
+        const ctxAct = document.getElementById('activityChart').getContext('2d');
+        new Chart(ctxAct, {
+            type: 'doughnut',
+            data: {
+                labels: ['Calls', 'Emails', 'Meetings', 'Other'],
+                datasets: [{
+                    data: [45, 30, 15, 10],
+                    backgroundColor: [
+                        primaryColor,
+                        secondaryColor,
+                        tertiaryColor,
+                        outlineColor
+                    ],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '75%',
+                plugins: {
+                    legend: {
+                        display: false // Using custom legend in HTML
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(17, 28, 45, 0.9)',
+                        padding: 10,
+                        cornerRadius: 8,
+                        callbacks: {
+                            label: function(context) {
+                                return ` ${context.label}: ${context.parsed}%`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+<script type="module" src="../js/dashboard.js"></script>
+</body></html>

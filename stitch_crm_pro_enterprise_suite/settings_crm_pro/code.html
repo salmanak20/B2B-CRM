@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CRM Pro - Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-tint": "#4d44e3",
+                      "on-secondary-fixed": "#001a42",
+                      "surface-container-low": "#f0f3ff",
+                      "on-tertiary-fixed-variant": "#5516be",
+                      "surface-container-lowest": "#ffffff",
+                      "on-surface-variant": "#464555",
+                      "primary-container": "#4f46e5",
+                      "primary-fixed-dim": "#c3c0ff",
+                      "background": "#f9f9ff",
+                      "tertiary-fixed-dim": "#d0bcff",
+                      "tertiary-container": "#6f3dd9",
+                      "tertiary-fixed": "#e9ddff",
+                      "inverse-primary": "#c3c0ff",
+                      "outline": "#777587",
+                      "on-primary-container": "#dad7ff",
+                      "error-container": "#ffdad6",
+                      "inverse-on-surface": "#ecf1ff",
+                      "on-error": "#ffffff",
+                      "on-primary-fixed-variant": "#3323cc",
+                      "surface-container-highest": "#d8e3fb",
+                      "outline-variant": "#c7c4d8",
+                      "on-tertiary-fixed": "#23005c",
+                      "on-error-container": "#93000a",
+                      "on-secondary": "#ffffff",
+                      "secondary-fixed-dim": "#adc6ff",
+                      "secondary-fixed": "#d8e2ff",
+                      "inverse-surface": "#263143",
+                      "on-primary": "#ffffff",
+                      "on-primary-fixed": "#0f0069",
+                      "primary": "#3525cd",
+                      "surface-bright": "#f9f9ff",
+                      "on-tertiary": "#ffffff",
+                      "surface-variant": "#d8e3fb",
+                      "on-secondary-fixed-variant": "#004395",
+                      "surface-container-high": "#dee8ff",
+                      "primary-fixed": "#e2dfff",
+                      "surface": "#f9f9ff",
+                      "surface-container": "#e7eeff",
+                      "on-background": "#111c2d",
+                      "tertiary": "#571ac0",
+                      "surface-dim": "#cfdaf2",
+                      "error": "#ba1a1a",
+                      "on-tertiary-container": "#e3d5ff",
+                      "on-secondary-container": "#fefcff",
+                      "secondary-container": "#2170e4",
+                      "on-surface": "#111c2d",
+                      "secondary": "#0058be"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "20px",
+                      "unit": "4px",
+                      "lg": "24px",
+                      "xl": "32px",
+                      "container-padding": "24px",
+                      "xs": "4px",
+                      "md": "16px",
+                      "sm": "8px"
+              },
+              "fontFamily": {
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Inter"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "headline-lg-mobile": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "36px",
+                              {
+                                      "lineHeight": "44px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-sm": [
+                              "13px",
+                              {
+                                      "lineHeight": "18px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "28px",
+                              {
+                                      "lineHeight": "36px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex">
+<!-- SideNavBar -->
+<aside class="hidden md:flex bg-surface dark:bg-surface-container flex flex-col h-full py-md border-r border-outline-variant/30 fixed left-0 top-0 h-screen w-[260px] z-50">
+<div class="px-lg pb-md mb-md border-b border-outline-variant/30">
+<div class="flex items-center gap-sm mb-xs">
+<div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary text-body-md" style="font-variation-settings: 'FILL' 1;">hexagon</span>
+</div>
+<span class="font-headline-sm text-headline-sm font-black text-primary">CRM Pro</span>
+</div>
+<span class="font-label-md text-label-md text-outline">Enterprise Tier</span>
+</div>
+<nav class="flex-1 overflow-y-auto px-xs">
+<ul class="space-y-xs">
+<li>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant dark:text-outline hover:text-primary mx-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded-lg transition-all scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined text-body-lg">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant dark:text-outline hover:text-primary mx-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded-lg transition-all scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined text-body-lg">leaderboard</span>
+<span class="font-label-md text-label-md">Leads</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant dark:text-outline hover:text-primary mx-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded-lg transition-all scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined text-body-lg">person</span>
+<span class="font-label-md text-label-md">Contacts</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant dark:text-outline hover:text-primary mx-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded-lg transition-all scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined text-body-lg">business</span>
+<span class="font-label-md text-label-md">Companies</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant dark:text-outline hover:text-primary mx-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded-lg transition-all scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined text-body-lg">handshake</span>
+<span class="font-label-md text-label-md">Deals</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant dark:text-outline hover:text-primary mx-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded-lg transition-all scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined text-body-lg">task_alt</span>
+<span class="font-label-md text-label-md">Tasks</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant dark:text-outline hover:text-primary mx-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded-lg transition-all scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined text-body-lg">calendar_today</span>
+<span class="font-label-md text-label-md">Calendar</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant dark:text-outline hover:text-primary mx-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded-lg transition-all scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined text-body-lg">bolt</span>
+<span class="font-label-md text-label-md">Automations</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant dark:text-outline hover:text-primary mx-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded-lg transition-all scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined text-body-lg">notifications</span>
+<span class="font-label-md text-label-md">Notifications</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant dark:text-outline hover:text-primary mx-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded-lg transition-all scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined text-body-lg">analytics</span>
+<span class="font-label-md text-label-md">Analytics</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant dark:text-outline hover:text-primary mx-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded-lg transition-all scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined text-body-lg">description</span>
+<span class="font-label-md text-label-md">Reports</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm bg-primary-container text-on-primary-container font-semibold rounded-lg mx-2 scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined text-body-lg">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</li>
+</ul>
+</nav>
+<div class="px-md mt-auto pt-md border-t border-outline-variant/30">
+<div class="flex items-center gap-sm">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="A small circular avatar image of a professional business user in a modern office setting. High quality, clear lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDFYSRK-SpMotWvS5GaVVDZ7s6AfVK595JjMXPIlcJFPpxFiJodaTkkvB_1Kd_vuuy_qxkESO2PUyXecaeni6zZqcBIGwvM59KUvo8yBSHB6zLpu9wVL7-TIQWVRy6z6ktchNv8JkUrhqutZGaG0vNkr5Ex026_a5AsGYWIS-Nuy9THl7Hg6Tw4tBAvYNlw0UcCF3RrS00TtNwhL-IH3AFSgwzyEKHeOVdDN9_FfNG1bmGvK2CCMmsSjw"/>
+<div class="flex-1 min-w-0">
+<p class="font-label-md text-label-md text-on-surface truncate">Jane Doe</p>
+<p class="font-body-sm text-body-sm text-outline truncate">Admin</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col md:ml-[260px] min-h-screen">
+<!-- TopNavBar (Mobile only for shell, acts as header on desktop) -->
+<header class="md:hidden sticky top-0 w-full flex justify-between items-center px-lg h-16 bg-surface/80 dark:bg-surface-container-high/80 backdrop-blur-xl z-40 border-b border-outline-variant/30 flat no shadows">
+<div class="flex items-center gap-sm">
+<button class="text-on-surface-variant dark:text-outline hover:bg-surface-variant/50 dark:hover:bg-surface-container-highest/50 p-sm rounded-lg transition-colors">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary">CRM Pro</span>
+</div>
+<div class="flex items-center gap-sm">
+<button class="text-on-surface-variant dark:text-outline hover:bg-surface-variant/50 dark:hover:bg-surface-container-highest/50 p-sm rounded-lg transition-colors">
+<span class="material-symbols-outlined">search</span>
+</button>
+<img class="w-8 h-8 rounded-full object-cover border border-outline-variant/30" data-alt="A small circular avatar image of a professional business user in a modern office setting. High quality, clear lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_MkTq5hYAgR7xmn36DVJ87mXWsiU2wVuQdWTy6KfE4Qlwgs8c74_QEYI8NhHnxxj2pskw-cCataf59y2xZcgNbqnwyr_u57UdOgtMAFVGI_Regsm4mXMGe6ykNOACurFfSkn94eKlhxKF0JUNyeUQH1voK-IwQSVCjixRfaBg64v2x84D2vd9U6MNpgBrdKYyQPZ6Ge0h-9bqq62D2tLM2TgIgH2sVJablUgE2ozh4vT9DKWWACQlUA"/>
+</div>
+</header>
+<!-- Desktop Header Content -->
+<div class="hidden md:flex sticky top-0 w-full justify-between items-center px-container-padding h-20 bg-surface/80 backdrop-blur-xl z-30 border-b border-outline-variant/30">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Settings</h1>
+<p class="font-body-md text-body-md text-outline">Manage your account and workspace preferences.</p>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-64 h-10 pl-10 pr-4 rounded-lg bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none font-body-md text-body-md text-on-surface placeholder:text-outline transition-all" placeholder="Search settings..." type="text"/>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant bg-surface hover:bg-surface-variant transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</div>
+</div>
+<!-- Mobile Header Content -->
+<div class="md:hidden px-container-padding py-md border-b border-outline-variant/30 bg-surface">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Settings</h1>
+<p class="font-body-sm text-body-sm text-outline mt-1">Manage your account and workspace.</p>
+</div>
+<!-- Settings Content Canvas -->
+<div class="p-container-padding max-w-5xl mx-auto w-full flex flex-col md:flex-row gap-xl">
+<!-- Settings Navigation (Tabs on mobile, List on desktop) -->
+<nav class="md:w-64 flex-shrink-0">
+<ul class="flex md:flex-col gap-2 overflow-x-auto md:overflow-visible pb-2 md:pb-0 scrollbar-hide">
+<li>
+<a class="block whitespace-nowrap px-md py-sm rounded-lg bg-primary/10 text-primary font-label-md text-label-md transition-colors border border-primary/20" href="#">
+                            Account Profile
+                        </a>
+</li>
+<li>
+<a class="block whitespace-nowrap px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-variant/50 font-label-md text-label-md transition-colors border border-transparent" href="#">
+                            CRM Preferences
+                        </a>
+</li>
+<li>
+<a class="block whitespace-nowrap px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-variant/50 font-label-md text-label-md transition-colors border border-transparent" href="#">
+                            Team &amp; Users
+                        </a>
+</li>
+<li>
+<a class="block whitespace-nowrap px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-variant/50 font-label-md text-label-md transition-colors border border-transparent" href="#">
+                            Security &amp; Billing
+                        </a>
+</li>
+<li>
+<a class="block whitespace-nowrap px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-variant/50 font-label-md text-label-md transition-colors border border-transparent" href="#">
+                            Integrations
+                        </a>
+</li>
+</ul>
+</nav>
+<!-- Active Settings Section (Account Profile) -->
+<div class="flex-1 space-y-xl">
+<!-- Bento Box: Profile Info -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant p-lg shadow-sm">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-md">Personal Information</h2>
+<div class="flex flex-col md:flex-row gap-lg">
+<div class="flex flex-col items-center gap-sm">
+<div class="relative group">
+<img class="w-24 h-24 rounded-full object-cover border border-outline-variant" data-alt="A professional headshot of a business woman in a modern, well-lit office environment. Neutral background, high-resolution, clear lighting, Apple-inspired minimal aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDAN-HitU8sN1YD37BC7MKuwyT3ILVZYDiIB5T-zBrADC7lJz5h74FbyP30lgKmQGnl8dxDGTDdj7aqJ1k5OvW0sl5mrZshs48hkhMb5q8XsO5oScUY1dGFn5XR8QUEmH2KolrSEf8dzpc6l_O1CD91q7eeMMxOjw3LCnjgS26oewRaRZzjRIXYyrLBKJ9StCHL_cd7P9pFRj-H_ERnGA0fov3btSKdJWW1qHdSFNn5jFkImmmseEPYIQ"/>
+<button class="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-surface-variant border border-outline-variant flex items-center justify-center text-on-surface-variant hover:bg-primary hover:text-white transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[16px]">edit</span>
+</button>
+</div>
+<span class="font-label-md text-label-md text-outline">JPG or PNG. Max 5MB.</span>
+</div>
+<div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-md">
+<div class="space-y-xs">
+<label class="block font-label-md text-label-md text-on-surface-variant">First Name</label>
+<input class="w-full h-10 px-md rounded-lg bg-surface-container-lowest border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none font-body-md text-body-md text-on-surface transition-all" type="text" value="Jane"/>
+</div>
+<div class="space-y-xs">
+<label class="block font-label-md text-label-md text-on-surface-variant">Last Name</label>
+<input class="w-full h-10 px-md rounded-lg bg-surface-container-lowest border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none font-body-md text-body-md text-on-surface transition-all" type="text" value="Doe"/>
+</div>
+<div class="space-y-xs md:col-span-2">
+<label class="block font-label-md text-label-md text-on-surface-variant">Email Address</label>
+<input class="w-full h-10 px-md rounded-lg bg-surface-container-lowest border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none font-body-md text-body-md text-on-surface transition-all" type="email" value="jane.doe@example.com"/>
+</div>
+<div class="space-y-xs md:col-span-2">
+<label class="block font-label-md text-label-md text-on-surface-variant">Job Title</label>
+<input class="w-full h-10 px-md rounded-lg bg-surface-container-lowest border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none font-body-md text-body-md text-on-surface transition-all" type="text" value="VP of Sales"/>
+</div>
+</div>
+</div>
+<div class="mt-md pt-md border-t border-outline-variant/50 flex justify-end">
+<button class="px-md py-sm bg-primary hover:bg-primary/90 text-white font-label-md text-label-md rounded-lg shadow-sm transition-all active:scale-95 bg-gradient-to-b from-[#4f46e5] to-[#3525cd]">
+                            Save Changes
+                        </button>
+</div>
+</section>
+<!-- Bento Box: Preferences -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant p-lg shadow-sm">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-md">Workspace Preferences</h2>
+<div class="space-y-lg">
+<div class="flex items-center justify-between p-md rounded-lg bg-surface-container-low border border-outline-variant/50">
+<div>
+<h3 class="font-label-md text-label-md text-on-surface">Timezone</h3>
+<p class="font-body-sm text-body-sm text-outline mt-1">Set your local timezone for accurate reporting and task deadlines.</p>
+</div>
+<select class="h-10 px-md rounded-lg bg-surface-container-lowest border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none font-body-md text-body-md text-on-surface">
+<option>Pacific Time (PT)</option>
+<option>Eastern Time (ET)</option>
+<option>Central European Time (CET)</option>
+</select>
+</div>
+<div class="flex items-center justify-between p-md rounded-lg bg-surface-container-low border border-outline-variant/50">
+<div>
+<h3 class="font-label-md text-label-md text-on-surface">Weekly Digest</h3>
+<p class="font-body-sm text-body-sm text-outline mt-1">Receive a weekly summary of pipeline activity and new leads.</p>
+</div>
+<!-- Custom Toggle -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="flex items-center justify-between p-md rounded-lg bg-surface-container-low border border-outline-variant/50">
+<div>
+<h3 class="font-label-md text-label-md text-on-surface">Compact View</h3>
+<p class="font-body-sm text-body-sm text-outline mt-1">Increase information density on Data Tables and Kanban boards.</p>
+</div>
+<!-- Custom Toggle -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+</section>
+<!-- Danger Zone -->
+<section class="bg-[#fff1f2] dark:bg-[#4c1d95]/10 rounded-xl border border-[#fda4af] p-lg">
+<h2 class="font-headline-md text-headline-md text-[#be123c] mb-sm flex items-center gap-2">
+<span class="material-symbols-outlined">warning</span>
+                        Danger Zone
+                    </h2>
+<p class="font-body-sm text-body-sm text-[#881337] mb-md">Irreversible actions related to your account.</p>
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-md bg-white/50 rounded-lg border border-[#fecdd3]">
+<div>
+<h3 class="font-label-md text-label-md text-[#be123c]">Deactivate Account</h3>
+<p class="font-body-sm text-body-sm text-[#9f1239] mt-1">Temporarily disable your access to CRM Pro.</p>
+</div>
+<button class="px-md py-sm bg-white border border-[#fda4af] text-[#be123c] hover:bg-[#fff1f2] font-label-md text-label-md rounded-lg transition-colors whitespace-nowrap">
+                            Deactivate
+                        </button>
+</div>
+</section>
+</div>
+</div>
+</main>
+<script type="module" src="../js/settings.js"></script>
+</body></html>
