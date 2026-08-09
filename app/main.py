@@ -5,6 +5,7 @@ from app.api.routes import (
     auth,
     companies,
     contacts,
+    dashboard,
     deals,
     health,
     leads,
@@ -33,6 +34,7 @@ app.include_router(pipeline_stages.router, prefix="/api/v1", tags=["pipeline sta
 app.include_router(deals.router, prefix="/api/v1/deals", tags=["deals"])
 app.include_router(tasks.router, prefix="/api/v1/tasks", tags=["tasks"])
 app.include_router(activities.router, prefix="/api/v1/activities", tags=["activities"])
+app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboard"])
 
 @app.get("/")
 def root():

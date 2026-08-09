@@ -37,7 +37,8 @@ def seed_db(db=None):
         "pipeline_stages.read", "pipeline_stages.create", "pipeline_stages.update", "pipeline_stages.delete",
         "deals.read", "deals.create", "deals.update", "deals.delete",
         "tasks.read", "tasks.create", "tasks.update", "tasks.delete",
-        "activities.read", "activities.create", "activities.update", "activities.delete"
+        "activities.read", "activities.create", "activities.update", "activities.delete",
+        "dashboard.read", "reports.read", "analytics.read",
     ]
     
     perms = {}
@@ -64,6 +65,7 @@ def seed_db(db=None):
         "deals.read", "deals.create", "deals.update",
         "tasks.read", "tasks.create", "tasks.update",
         "activities.read", "activities.create", "activities.update",
+        "dashboard.read", "reports.read", "analytics.read",
     }
     roles["sales_rep"].permissions = [p for name, p in perms.items() if name in sales_rep_permission_names]
     
