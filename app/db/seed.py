@@ -39,6 +39,7 @@ def seed_db(db=None):
         "tasks.read", "tasks.create", "tasks.update", "tasks.delete",
         "activities.read", "activities.create", "activities.update", "activities.delete",
         "dashboard.read", "reports.read", "analytics.read",
+        "notifications.read", "notifications.update", "exports.read", "audit_logs.read",
     ]
     
     perms = {}
@@ -66,10 +67,11 @@ def seed_db(db=None):
         "tasks.read", "tasks.create", "tasks.update",
         "activities.read", "activities.create", "activities.update",
         "dashboard.read", "reports.read", "analytics.read",
+        "notifications.read", "notifications.update", "exports.read",
     }
     roles["sales_rep"].permissions = [p for name, p in perms.items() if name in sales_rep_permission_names]
     
-    v_perms = [p for name, p in perms.items() if name.endswith(".read") and "users" not in name]
+    v_perms = [p for name, p in perms.items() if name.endswith(".read") and "users" not in name and "audit_logs" not in name]
     roles["viewer"].permissions = v_perms
     
     db.commit()

@@ -11,6 +11,7 @@ from app.api.ownership import (
 from app.schemas.contact import ContactCreate, ContactUpdate, ContactResponse, ContactList
 from app.crud.contact import create_contact, get_contact, get_contacts, update_contact, delete_contact
 from app.crud.company import get_company
+from app.crud.audit_log import log_event
 
 router = APIRouter()
 
@@ -21,7 +22,9 @@ def create_new_contact(contact_in: ContactCreate, db: SessionDep, current_user: 
         raise HTTPException(status_code=400, detail="Referenced company does not exist")
     ensure_can_read_crm_record(company.owner_id, current_user)
     owner_id = resolve_owner_id(db, current_user, contact_in.owner_id)
-    return create_contact(db=db, contact_in=contact_in, owner_id=owner_id)
+    contact = create_contact(db=db, contact_in=contact_in, owner_id=owner_id)
+    log_event(db, action="Contact Created", user_id=current_user.id, entity="Contact", entity_id=contact.id, description=f"Created contact {contact.first_name} {contact.last_name}")
+    return contact
 
 @router.get("", response_model=ContactList, dependencies=[Depends(require_permission("contacts.read"))])
 def read_contacts(
@@ -75,7 +78,9 @@ def update_existing_contact(contact_id: int, contact_in: ContactUpdate, db: Sess
     if contact_in.owner_id is not None:
         contact_in.owner_id = resolve_owner_id(db, current_user, contact_in.owner_id)
             
-    return update_contact(db=db, db_contact=contact, contact_in=contact_in)
+    updated_contact = update_contact(db=db, db_contact=contact, contact_in=contact_in)
+    log_event(db, action="Contact Updated", user_id=current_user.id, entity="Contact", entity_id=updated_contact.id, description=f"Updated contact {updated_contact.first_name} {updated_contact.last_name}")
+    return updated_contact
 
 @router.delete("/{contact_id}", dependencies=[Depends(require_permission("contacts.delete"))])
 def delete_existing_contact(contact_id: int, db: SessionDep, current_user: CurrentActiveUser):

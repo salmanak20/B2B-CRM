@@ -2,15 +2,20 @@ from fastapi import FastAPI
 from app.core.config import settings
 from app.api.routes import (
     activities,
+    audit_logs,
     auth,
     companies,
     contacts,
     dashboard,
     deals,
+    exports,
     health,
     leads,
+    notifications,
     pipeline_stages,
     pipelines,
+    reports,
+    search,
     tasks,
     users,
 )
@@ -35,6 +40,11 @@ app.include_router(deals.router, prefix="/api/v1/deals", tags=["deals"])
 app.include_router(tasks.router, prefix="/api/v1/tasks", tags=["tasks"])
 app.include_router(activities.router, prefix="/api/v1/activities", tags=["activities"])
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboard"])
+app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["Notifications"])
+app.include_router(search.router, prefix="/api/v1/search", tags=["Search"])
+app.include_router(reports.router, prefix="/api/v1/reports", tags=["Reports"])
+app.include_router(exports.router, prefix="/api/v1/exports", tags=["Exports"])
+app.include_router(audit_logs.router, prefix="/api/v1/audit-logs", tags=["Audit Logs"])
 
 @app.get("/")
 def root():

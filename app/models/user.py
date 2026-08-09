@@ -27,3 +27,5 @@ class User(Base):
     owned_tasks: Mapped[List["Task"]] = relationship(foreign_keys="Task.owner_id", back_populates="owner")
     assigned_tasks: Mapped[List["Task"]] = relationship(foreign_keys="Task.assigned_to_id", back_populates="assigned_to")
     activities: Mapped[List["Activity"]] = relationship(back_populates="user")
+    notifications: Mapped[List["Notification"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    audit_logs: Mapped[List["AuditLog"]] = relationship(back_populates="user")

@@ -12,6 +12,7 @@ from app.schemas.lead import LeadCreate, LeadSource, LeadStatus, LeadUpdate, Lea
 from app.crud.lead import create_lead, get_lead, get_leads, update_lead, delete_lead
 from app.crud.company import get_company
 from app.crud.contact import get_contact
+from app.crud.audit_log import log_event
 
 router = APIRouter()
 
@@ -40,7 +41,9 @@ def validate_lead_relationships(
 def create_new_lead(lead_in: LeadCreate, db: SessionDep, current_user: CurrentActiveUser):
     validate_lead_relationships(db, current_user, lead_in.company_id, lead_in.contact_id)
     owner_id = resolve_owner_id(db, current_user, lead_in.owner_id)
-    return create_lead(db=db, lead_in=lead_in, owner_id=owner_id)
+    lead = create_lead(db=db, lead_in=lead_in, owner_id=owner_id)
+    log_event(db, action="Lead Created", user_id=current_user.id, entity="Lead", entity_id=lead.id, description=f"Created lead {lead.title}")
+    return lead
 
 @router.get("", response_model=LeadList, dependencies=[Depends(require_permission("leads.read"))])
 def read_leads(
@@ -89,7 +92,9 @@ def update_existing_lead(lead_id: int, lead_in: LeadUpdate, db: SessionDep, curr
     if lead_in.owner_id is not None:
         lead_in.owner_id = resolve_owner_id(db, current_user, lead_in.owner_id)
             
-    return update_lead(db=db, db_lead=lead, lead_in=lead_in)
+    updated_lead = update_lead(db=db, db_lead=lead, lead_in=lead_in)
+    log_event(db, action="Lead Updated", user_id=current_user.id, entity="Lead", entity_id=updated_lead.id, description=f"Updated lead {updated_lead.title}")
+    return updated_lead
 
 @router.delete("/{lead_id}", dependencies=[Depends(require_permission("leads.delete"))])
 def delete_existing_lead(lead_id: int, db: SessionDep, current_user: CurrentActiveUser):

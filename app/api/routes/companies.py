@@ -17,6 +17,7 @@ from app.crud.company import (
     get_company_by_owner_and_name,
     update_company,
 )
+from app.crud.audit_log import log_event
 
 router = APIRouter()
 
@@ -28,7 +29,9 @@ def create_new_company(company_in: CompanyCreate, db: SessionDep, current_user: 
             status_code=status.HTTP_409_CONFLICT,
             detail="A company with this name already exists for the owner",
         )
-    return create_company(db=db, company_in=company_in, owner_id=owner_id)
+    company = create_company(db=db, company_in=company_in, owner_id=owner_id)
+    log_event(db, action="Company Created", user_id=current_user.id, entity="Company", entity_id=company.id, description=f"Created company {company.name}")
+    return company
 
 @router.get("", response_model=CompanyList, dependencies=[Depends(require_permission("companies.read"))])
 def read_companies(
@@ -81,7 +84,9 @@ def update_existing_company(company_id: int, company_in: CompanyUpdate, db: Sess
             status_code=status.HTTP_409_CONFLICT,
             detail="A company with this name already exists for the owner",
         )
-    return update_company(db=db, db_company=company, company_in=company_in)
+    updated_company = update_company(db=db, db_company=company, company_in=company_in)
+    log_event(db, action="Company Updated", user_id=current_user.id, entity="Company", entity_id=updated_company.id, description=f"Updated company {updated_company.name}")
+    return updated_company
 
 @router.delete("/{company_id}", dependencies=[Depends(require_permission("companies.delete"))])
 def delete_existing_company(company_id: int, db: SessionDep, current_user: CurrentActiveUser):

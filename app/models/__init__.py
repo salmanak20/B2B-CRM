@@ -10,3 +10,5 @@ from app.models.pipeline_stage import PipelineStage
 from app.models.deal import Deal
 from app.models.task import Task
 from app.models.activity import Activity
+from app.models.notification import Notification
+from app.models.audit_log import AuditLog

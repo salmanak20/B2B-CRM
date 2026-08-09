@@ -20,6 +20,7 @@ from app.models.activity import Activity
 from app.models.task import Task
 from app.schemas.deal import DealCreate, DealList, DealResponse, DealStageUpdate, DealStatus, DealUpdate
 from app.schemas.timeline import TimelineItem, TimelineResponse
+from app.crud.audit_log import log_event
 
 router = APIRouter()
 
@@ -75,7 +76,9 @@ def create_new_deal(deal_in: DealCreate, db: SessionDep, current_user: CurrentAc
     _, stage = validate_pipeline_and_stage(db, deal_in.pipeline_id, deal_in.stage_id)
     validate_deal_relationships(db, current_user, deal_in.company_id, deal_in.contact_id, deal_in.lead_id)
     owner_id = resolve_owner_id(db, current_user, deal_in.owner_id)
-    return create_deal(db, deal_in, owner_id, stage)
+    deal = create_deal(db, deal_in, owner_id, stage)
+    log_event(db, action="Deal Created", user_id=current_user.id, entity="Deal", entity_id=deal.id, description=f"Created deal {deal.title}")
+    return deal
 
 
 @router.get("", response_model=DealList, dependencies=[Depends(require_permission("deals.read"))])
@@ -196,7 +199,9 @@ def update_existing_deal(deal_id: int, deal_in: DealUpdate, db: SessionDep, curr
     )
     if deal_in.owner_id is not None:
         deal_in.owner_id = resolve_owner_id(db, current_user, deal_in.owner_id)
-    return update_deal(db, deal, deal_in, stage=stage)
+    updated_deal = update_deal(db, deal, deal_in, stage=stage)
+    log_event(db, action="Deal Updated", user_id=current_user.id, entity="Deal", entity_id=updated_deal.id, description=f"Updated deal {updated_deal.title}")
+    return updated_deal
 
 
 @router.patch("/{deal_id}/stage", response_model=DealResponse, dependencies=[Depends(require_permission("deals.update"))])
@@ -210,7 +215,9 @@ def move_existing_deal_stage(deal_id: int, stage_in: DealStageUpdate, db: Sessio
         raise HTTPException(status_code=400, detail="Referenced pipeline stage does not exist")
     if stage.pipeline_id != deal.pipeline_id:
         raise HTTPException(status_code=400, detail="Pipeline stage does not belong to the deal pipeline")
-    return move_deal_stage(db, deal, stage)
+    updated_deal = move_deal_stage(db, deal, stage)
+    log_event(db, action="Deal Stage Changed", user_id=current_user.id, entity="Deal", entity_id=updated_deal.id, description=f"Deal {updated_deal.title} moved to stage {stage.name}")
+    return updated_deal
 
 
 @router.delete("/{deal_id}", dependencies=[Depends(require_permission("deals.delete"))])

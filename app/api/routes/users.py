@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.api.deps import SessionDep, CurrentActiveUser, require_role
 from app.schemas.user import UserResponse, UserUpdate, UserUpdateAdmin
 from app.crud.user import update_user, get_user_by_id, get_users
+from app.crud.audit_log import log_event
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -39,11 +40,13 @@ def update_user_by_id(
 
 @router.patch("/{user_id}/status", response_model=UserResponse, dependencies=[Depends(require_role(["admin"]))])
 def change_user_status(
-    user_id: int, is_active: bool, db: SessionDep
+    user_id: int, is_active: bool, db: SessionDep, current_user: CurrentActiveUser
 ) -> Any:
     user = get_user_by_id(db, user_id=user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
     update_data = UserUpdateAdmin(is_active=is_active)
-    return update_user(db, db_user=user, user_in=update_data)
+    updated_user = update_user(db, db_user=user, user_in=update_data)
+    log_event(db, action="User Status Changed", user_id=current_user.id, entity="User", entity_id=user.id, description=f"User {user.email} active status changed to {is_active}")
+    return updated_user
