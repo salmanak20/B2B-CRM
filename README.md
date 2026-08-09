@@ -164,98 +164,78 @@ alembic check
 python -m app.db.seed
 ```
 
-## Production Deployment
+## Production Deployment (Phase 10)
 
-This guide outlines the steps to deploy the B2B CRM application in a production environment.
+This guide outlines the explicit manual steps to deploy the B2B CRM application to production using Vercel (Frontend), Render (Backend), and Render PostgreSQL.
 
-### 1. Prerequisites
-- Linux Server (e.g., Ubuntu 22.04) or a containerized environment (Docker).
-- Python 3.12+
-- PostgreSQL 14+
-- A reverse proxy (e.g., Nginx, Caddy) for HTTPS termination.
+### 1. Database (Render PostgreSQL)
 
-### 2. PostgreSQL Setup
-- Install PostgreSQL and create a secure database and user.
-- Ensure the production database is not accessible publicly (restrict to localhost or internal VPC).
-- Do not use simple or default passwords.
+1. Create a new **PostgreSQL** instance on Render.
+2. Ensure the instance is running.
+3. Copy the **Internal Database URL** for the backend connection and the **External Database URL** for your local migration/seed.
 
-### 3. Environment Variables
-- Create a `.env` file from `.env.example` but **never** commit it to version control.
-- Ensure `ENVIRONMENT=production`.
-- Ensure `DEBUG=False`.
-- Set a strong, randomly generated `JWT_SECRET_KEY` (e.g., using `openssl rand -hex 32`).
-- Configure `CORS_ORIGINS` to exactly match your production frontend URL (e.g., `["https://crm.yourdomain.com"]`).
-- Set `DATABASE_URL` with your secure production database credentials.
+### 2. Backend Installation (Render)
 
-### 4. Backend Installation
+We have provided a `render.yaml` Infrastructure-as-Code file in the `backend/` directory to simplify deployment.
+
+1. Connect your GitHub repository to Render.
+2. Create a new **Blueprint Instance** and select the repository.
+3. Render will automatically detect `render.yaml` and provision both the Web Service and PostgreSQL database, or use the existing one if configured.
+4. Ensure the following environment variables are set correctly in Render:
+   - `ENVIRONMENT=production`
+   - `DEBUG=False`
+   - `CORS_ORIGINS=["https://your-vercel-domain.vercel.app"]`
+   - `JWT_SECRET_KEY` (Generate a secure, random string)
+   - `DATABASE_URL` (Points to the Render PostgreSQL instance)
+
+The backend start command configured is:
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port $PORT
 ```
 
-### 5. Database Migration & 6. Seed Process
-Run migrations to set up the schema and run the seed script for initial roles/permissions.
+### 3. Database Migration & Seed
+
+Before using the application, you must run the migrations and seed script against the production database. You can do this from your local machine using the external database URL or via the Render shell.
+
+**Using local machine with External Database URL:**
 ```bash
+export DATABASE_URL="postgresql+psycopg://user:pass@host/db"
 alembic upgrade head
 python -m app.db.seed
 ```
-*Note: The seed script is idempotent and safe to run on existing databases.*
+*Note: The seed script is idempotent and safely creates default pipeline stages and roles without duplicating data.*
 
-### 7. Backend Startup
-Do **not** use `--reload` in production. Use `uvicorn` (with workers) or `gunicorn` for a robust process manager.
-Example using `uvicorn`:
-```bash
-uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 4
-```
-It is highly recommended to manage this process using `systemd` or a container orchestration tool.
+### 4. Frontend Configuration & Deployment (Vercel)
 
-### 8. Frontend Configuration
-- In the frontend directory, configure the `.env` file to point to your production backend API.
-- Ensure `VITE_API_BASE_URL=https://api.yourdomain.com/api/v1`.
-- The frontend should only contain public configuration. It should never contain database credentials or JWT secrets.
+The frontend is a static Vite application. We have provided a `vercel.json` for security headers.
 
-### 9. Frontend Deployment
-Build the frontend for production:
-```bash
-npm install
-npm run build
-```
-Serve the resulting `dist/` directory using a static web server (e.g., Nginx).
+1. In the `stitch_crm_pro_enterprise_suite` directory, configure the `.env` (this is used during build, so Vercel environment variables will be used):
+   - Set `VITE_API_BASE_URL=https://your-render-backend-url.onrender.com/api/v1`
+2. Connect your repository to Vercel.
+3. Import the `stitch_crm_pro_enterprise_suite` folder as the Root Directory.
+4. Vercel will automatically detect the `package.json` and use the Vite build commands.
+5. In the Vercel project settings, add the Environment Variable:
+   - `VITE_API_BASE_URL=https://your-render-backend-url.onrender.com/api/v1`
+6. Deploy the project.
 
-### 10. HTTPS Requirements & 11. CORS Configuration
-- **HTTPS is mandatory** for production to secure JWT tokens and passwords in transit.
-- Configure your reverse proxy (Nginx) to handle SSL/TLS certificates (e.g., via Let's Encrypt).
-- The reverse proxy should forward traffic to the `uvicorn` backend running on localhost.
-- Ensure `CORS_ORIGINS` in the backend `.env` matches the HTTPS frontend URL.
+### 5. Deployment Validation
 
-### 12. Production Security Checklist
-- [ ] `DEBUG=False` in backend `.env`.
-- [ ] `ENVIRONMENT=production` in backend `.env`.
-- [ ] Strong `JWT_SECRET_KEY` configured.
-- [ ] `CORS_ORIGINS` restricted to known frontend URLs.
-- [ ] HTTPS enforced on frontend and API via reverse proxy.
-- [ ] No secrets committed to git.
-- [ ] Database accessible only to the backend.
+Once deployed, manually verify the following:
 
-### 13. Backup Strategy & Database Recovery
-**Backup Procedure**:
-Regularly back up your PostgreSQL database using `pg_dump`:
-```bash
-pg_dump -U postgres -W -F t b2b_crm > b2b_crm_backup_$(date +%F).tar
-```
-- Automate this process using a cron job.
-- Store backups securely off-site (e.g., AWS S3, separate storage server).
+- **HTTPS:** Ensure both Vercel and Render are serving over HTTPS.
+- **Health Check:** Visit `https://your-render-backend-url.onrender.com/api/v1/health` to confirm the backend is running.
+- **Frontend-Backend Connection:** Open the Vercel frontend domain in a browser. Ensure there are no CORS errors in the console.
+- **Authentication:** Login with a valid test account. Verify JWT is stored correctly.
+- **RBAC:** Verify that roles enforce permissions (e.g., Viewer role is read-only).
+- **CRUD Operations:** Test creating, reading, updating, and deleting Companies, Contacts, Leads, Deals, Tasks, and Activities.
+- **Phase 7 Features:** Verify Search, Reports, CSV Exports, Audit Logs, and Notifications function correctly.
 
-**Restore Procedure**:
-To restore a backup (WARNING: This overwrites current data):
-```bash
-pg_restore -U postgres -d b2b_crm -1 b2b_crm_backup_YYYY-MM-DD.tar
-```
-**Production Database Update Procedure**:
-- Always run `alembic upgrade head` after pulling new backend code that includes migrations.
+### 6. Backup & Rollback Strategy
 
-### 14. Troubleshooting
-- **CORS Errors**: Ensure the `CORS_ORIGINS` variable exactly matches the protocol (http/https) and domain of the frontend making the request.
-- **500 Internal Server Error**: Check the backend application logs. In production (`ENVIRONMENT=production`), logs are set to `INFO` level and error stack traces are hidden from API responses but visible in logs.
-- **Migration Issues**: Use `alembic current` and `alembic heads` to diagnose migration state. Never modify existing migration files.
+**Backup:**
+Render provides automated daily backups for managed PostgreSQL databases. You can also manually trigger a backup from the Render dashboard.
+
+**Rollback:**
+- **Backend:** In Render, navigate to the Web Service, go to the "Deploys" tab, select a previous successful deploy, and click "Rollback to this deploy".
+- **Frontend:** In Vercel, navigate to the "Deployments" tab, select a previous successful deployment, and click "Promote to Production".
+- **Database:** Render allows restoring to a point-in-time from the dashboard. Always verify `alembic` migrations match the codebase version after a rollback.
