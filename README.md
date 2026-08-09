@@ -163,3 +163,99 @@ alembic upgrade head
 alembic check
 python -m app.db.seed
 ```
+
+## Production Deployment
+
+This guide outlines the steps to deploy the B2B CRM application in a production environment.
+
+### 1. Prerequisites
+- Linux Server (e.g., Ubuntu 22.04) or a containerized environment (Docker).
+- Python 3.12+
+- PostgreSQL 14+
+- A reverse proxy (e.g., Nginx, Caddy) for HTTPS termination.
+
+### 2. PostgreSQL Setup
+- Install PostgreSQL and create a secure database and user.
+- Ensure the production database is not accessible publicly (restrict to localhost or internal VPC).
+- Do not use simple or default passwords.
+
+### 3. Environment Variables
+- Create a `.env` file from `.env.example` but **never** commit it to version control.
+- Ensure `ENVIRONMENT=production`.
+- Ensure `DEBUG=False`.
+- Set a strong, randomly generated `JWT_SECRET_KEY` (e.g., using `openssl rand -hex 32`).
+- Configure `CORS_ORIGINS` to exactly match your production frontend URL (e.g., `["https://crm.yourdomain.com"]`).
+- Set `DATABASE_URL` with your secure production database credentials.
+
+### 4. Backend Installation
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 5. Database Migration & 6. Seed Process
+Run migrations to set up the schema and run the seed script for initial roles/permissions.
+```bash
+alembic upgrade head
+python -m app.db.seed
+```
+*Note: The seed script is idempotent and safe to run on existing databases.*
+
+### 7. Backend Startup
+Do **not** use `--reload` in production. Use `uvicorn` (with workers) or `gunicorn` for a robust process manager.
+Example using `uvicorn`:
+```bash
+uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 4
+```
+It is highly recommended to manage this process using `systemd` or a container orchestration tool.
+
+### 8. Frontend Configuration
+- In the frontend directory, configure the `.env` file to point to your production backend API.
+- Ensure `VITE_API_BASE_URL=https://api.yourdomain.com/api/v1`.
+- The frontend should only contain public configuration. It should never contain database credentials or JWT secrets.
+
+### 9. Frontend Deployment
+Build the frontend for production:
+```bash
+npm install
+npm run build
+```
+Serve the resulting `dist/` directory using a static web server (e.g., Nginx).
+
+### 10. HTTPS Requirements & 11. CORS Configuration
+- **HTTPS is mandatory** for production to secure JWT tokens and passwords in transit.
+- Configure your reverse proxy (Nginx) to handle SSL/TLS certificates (e.g., via Let's Encrypt).
+- The reverse proxy should forward traffic to the `uvicorn` backend running on localhost.
+- Ensure `CORS_ORIGINS` in the backend `.env` matches the HTTPS frontend URL.
+
+### 12. Production Security Checklist
+- [ ] `DEBUG=False` in backend `.env`.
+- [ ] `ENVIRONMENT=production` in backend `.env`.
+- [ ] Strong `JWT_SECRET_KEY` configured.
+- [ ] `CORS_ORIGINS` restricted to known frontend URLs.
+- [ ] HTTPS enforced on frontend and API via reverse proxy.
+- [ ] No secrets committed to git.
+- [ ] Database accessible only to the backend.
+
+### 13. Backup Strategy & Database Recovery
+**Backup Procedure**:
+Regularly back up your PostgreSQL database using `pg_dump`:
+```bash
+pg_dump -U postgres -W -F t b2b_crm > b2b_crm_backup_$(date +%F).tar
+```
+- Automate this process using a cron job.
+- Store backups securely off-site (e.g., AWS S3, separate storage server).
+
+**Restore Procedure**:
+To restore a backup (WARNING: This overwrites current data):
+```bash
+pg_restore -U postgres -d b2b_crm -1 b2b_crm_backup_YYYY-MM-DD.tar
+```
+**Production Database Update Procedure**:
+- Always run `alembic upgrade head` after pulling new backend code that includes migrations.
+
+### 14. Troubleshooting
+- **CORS Errors**: Ensure the `CORS_ORIGINS` variable exactly matches the protocol (http/https) and domain of the frontend making the request.
+- **500 Internal Server Error**: Check the backend application logs. In production (`ENVIRONMENT=production`), logs are set to `INFO` level and error stack traces are hidden from API responses but visible in logs.
+- **Migration Issues**: Use `alembic current` and `alembic heads` to diagnose migration state. Never modify existing migration files.

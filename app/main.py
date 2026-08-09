@@ -1,4 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+import logging
 from app.core.config import settings
 from app.api.routes import (
     activities,
@@ -26,6 +28,30 @@ app = FastAPI(
     description="Backend API for B2B CRM System",
     debug=settings.DEBUG,
 )
+
+# Configure logging based on environment
+if settings.ENVIRONMENT == "production":
+    logging.basicConfig(level=logging.INFO, format="%(levelname)-5.5s [%(name)s] %(message)s")
+else:
+    logging.basicConfig(level=logging.DEBUG, format="%(levelname)-5.5s [%(name)s] %(message)s")
+
+# CORS configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Security headers middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    return response
 
 app.include_router(health.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")

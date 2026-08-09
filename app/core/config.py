@@ -4,6 +4,8 @@ class Settings(BaseSettings):
     APP_NAME: str = "B2B CRM API"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
+    ENVIRONMENT: str = "development"
+    CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000"]
     
     DATABASE_URL: str
     
