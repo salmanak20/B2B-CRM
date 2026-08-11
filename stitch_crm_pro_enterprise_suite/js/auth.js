@@ -1,4 +1,4 @@
-import { TOKEN_KEY, USER_KEY } from './config.js';
+import { API_BASE_URL, TOKEN_KEY, USER_KEY } from './config.js';
 import { apiPost, apiGet, getLoginUrl } from './api.js';
 
 export async function login(username, password) {
@@ -8,7 +8,7 @@ export async function login(username, password) {
   formData.append('username', username);
   formData.append('password', password);
 
-  const response = await fetch('http://localhost:8000/api/v1/auth/login', {
+  const response = await fetch(`${API_BASE_URL}/auth/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
