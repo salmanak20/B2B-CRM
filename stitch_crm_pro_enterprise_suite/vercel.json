@@ -1,6 +1,12 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/:path*/code",
+      "destination": "/:path*/code.html"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
