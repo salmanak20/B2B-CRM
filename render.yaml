@@ -1,28 +1,22 @@
 services:
   - type: web
     name: b2b-crm-backend
-    env: python
+    runtime: python
+    rootDir: backend
     buildCommand: "pip install -r requirements.txt"
     startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: b2b-crm-db
-          property: connectionString
+        sync: false  # Set manually in Render dashboard to your Supabase PostgreSQL connection string
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: JWT_ALGORITHM
         value: HS256
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
-        value: 30
+        value: "30"
       - key: ENVIRONMENT
         value: production
       - key: DEBUG
         value: "False"
       - key: CORS_ORIGINS
         value: "[\"https://your-vercel-domain.vercel.app\"]"
-
-databases:
-  - name: b2b-crm-db
-    databaseName: b2b_crm
-    user: crm_user
