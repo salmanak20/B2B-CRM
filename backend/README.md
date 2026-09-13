@@ -166,13 +166,17 @@ python -m app.db.seed
 
 ## Production Deployment (Phase 10)
 
-This guide outlines the explicit manual steps to deploy the B2B CRM application to production using Vercel (Frontend), Render (Backend), and Render PostgreSQL.
+This guide outlines the explicit manual steps to deploy the B2B CRM application to production using Vercel (Frontend), Render (Backend), and Supabase PostgreSQL (Database).
 
-### 1. Database (Render PostgreSQL)
+### 1. Database (Supabase PostgreSQL)
 
-1. Create a new **PostgreSQL** instance on Render.
-2. Ensure the instance is running.
-3. Copy the **Internal Database URL** for the backend connection and the **External Database URL** for your local migration/seed.
+1. Create a new project on [Supabase](https://supabase.com/).
+2. Navigate to **Project Settings → Database** to find your connection string.
+3. Use the **Session Pooler** connection string (port `5432`) for persistent backends, or the **Transaction Pooler** (port `6543`) for serverless use.
+4. The connection string format is:
+   ```
+   postgresql+psycopg://postgres.<PROJECT_REF>:<PASSWORD>@aws-0-<REGION>.pooler.supabase.com:5432/postgres
+   ```
 
 ### 2. Backend Installation (Render)
 
@@ -180,13 +184,14 @@ We have provided a `render.yaml` Infrastructure-as-Code file in the `backend/` d
 
 1. Connect your GitHub repository to Render.
 2. Create a new **Blueprint Instance** and select the repository.
-3. Render will automatically detect `render.yaml` and provision both the Web Service and PostgreSQL database, or use the existing one if configured.
-4. Ensure the following environment variables are set correctly in Render:
+3. Render will automatically detect `render.yaml` and provision the Web Service.
+4. Set the `DATABASE_URL` environment variable **manually** in the Render dashboard to your Supabase connection string.
+5. Ensure the following environment variables are set correctly in Render:
    - `ENVIRONMENT=production`
    - `DEBUG=False`
    - `CORS_ORIGINS=["https://your-vercel-domain.vercel.app"]`
    - `JWT_SECRET_KEY` (Generate a secure, random string)
-   - `DATABASE_URL` (Points to the Render PostgreSQL instance)
+   - `DATABASE_URL` (Points to the Supabase PostgreSQL instance)
 
 The backend start command configured is:
 ```bash
@@ -195,11 +200,11 @@ uvicorn app.main:app --host 0.0.0.0 --port $PORT
 
 ### 3. Database Migration & Seed
 
-Before using the application, you must run the migrations and seed script against the production database. You can do this from your local machine using the external database URL or via the Render shell.
+Before using the application, you must run the migrations and seed script against the Supabase database. You can do this from your local machine using the Supabase connection string.
 
-**Using local machine with External Database URL:**
+**Using local machine with Supabase connection string:**
 ```bash
-export DATABASE_URL="postgresql+psycopg://user:pass@host/db"
+# Set your Supabase DATABASE_URL in backend/.env, then:
 alembic upgrade head
 python -m app.db.seed
 ```
@@ -230,12 +235,27 @@ Once deployed, manually verify the following:
 - **CRUD Operations:** Test creating, reading, updating, and deleting Companies, Contacts, Leads, Deals, Tasks, and Activities.
 - **Phase 7 Features:** Verify Search, Reports, CSV Exports, Audit Logs, and Notifications function correctly.
 
-### 6. Backup & Rollback Strategy
+### 6. Data Migration (Render → Supabase)
+
+If your Render PostgreSQL database contains existing production data, migrate it safely:
+
+```bash
+# 1. Export from Render PostgreSQL (use External Database URL from Render dashboard)
+pg_dump "postgresql://crm_user:<RENDER_PASSWORD>@<RENDER_HOST>:5432/b2b_crm" > render_backup.sql
+
+# 2. Import into Supabase PostgreSQL
+psql "postgresql://postgres.<PROJECT_REF>:<SUPABASE_PASSWORD>@aws-0-<REGION>.pooler.supabase.com:5432/postgres" < render_backup.sql
+```
+
+If the Render database is empty or contains only test data, skip this step and run a clean `alembic upgrade head` + `python -m app.db.seed` on Supabase instead.
+
+### 7. Backup & Rollback Strategy
 
 **Backup:**
-Render provides automated daily backups for managed PostgreSQL databases. You can also manually trigger a backup from the Render dashboard.
+Supabase provides daily automated backups (available on Pro plan and above). You can also manually export your database using `pg_dump` at any time.
 
 **Rollback:**
 - **Backend:** In Render, navigate to the Web Service, go to the "Deploys" tab, select a previous successful deploy, and click "Rollback to this deploy".
 - **Frontend:** In Vercel, navigate to the "Deployments" tab, select a previous successful deployment, and click "Promote to Production".
-- **Database:** Render allows restoring to a point-in-time from the dashboard. Always verify `alembic` migrations match the codebase version after a rollback.
+- **Database:** Use Supabase's point-in-time recovery from the dashboard (Pro plan), or restore from a `pg_dump` backup. Always verify `alembic` migrations match the codebase version after a rollback.
+
