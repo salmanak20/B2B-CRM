@@ -38,3 +38,5 @@ qa-results/**
 !qa-results/implementation/local-app-running.png
 !qa-results/implementation/*-accessibility-and-layout.json
 !qa-results/implementation/chromium-responsive-width-sweep.json
+!qa-results/implementation/vercel-deployment-smoke.json
+!qa-results/implementation/production-login-deployed.png

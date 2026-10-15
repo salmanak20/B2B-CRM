@@ -1,0 +1,179 @@
+[
+  {
+    "path": "/",
+    "status": 200,
+    "type": "text/html; charset=utf-8",
+    "csp": true
+  },
+  {
+    "path": "/login",
+    "status": 200,
+    "type": "text/html; charset=utf-8",
+    "csp": true,
+    "assets": [
+      {
+        "path": "/assets/crm_pro_enterprise-BhNmuOVf.js",
+        "status": 200
+      },
+      {
+        "path": "/assets/api-DXu9eq7d.js",
+        "status": 200
+      },
+      {
+        "path": "/assets/app-DtzLKLZG.js",
+        "status": 200
+      },
+      {
+        "path": "/assets/ui-C1ExZ9dm.js",
+        "status": 200
+      },
+      {
+        "path": "/assets/app-BxaSSxHp.css",
+        "status": 200
+      }
+    ]
+  },
+  {
+    "path": "/dashboard",
+    "status": 200,
+    "type": "text/html; charset=utf-8",
+    "csp": true
+  },
+  {
+    "path": "/analytics",
+    "status": 200,
+    "type": "text/html; charset=utf-8",
+    "csp": true
+  },
+  {
+    "path": "/reports",
+    "status": 200,
+    "type": "text/html; charset=utf-8",
+    "csp": true
+  },
+  {
+    "path": "/companies",
+    "status": 200,
+    "type": "text/html; charset=utf-8",
+    "csp": true
+  },
+  {
+    "path": "/contacts",
+    "status": 200,
+    "type": "text/html; charset=utf-8",
+    "csp": true
+  },
+  {
+    "path": "/leads",
+    "status": 200,
+    "type": "text/html; charset=utf-8",
+    "csp": true
+  },
+  {
+    "path": "/deals",
+    "status": 200,
+    "type": "text/html; charset=utf-8",
+    "csp": true
+  },
+  {
+    "path": "/tasks",
+    "status": 200,
+    "type": "text/html; charset=utf-8",
+    "csp": true
+  },
+  {
+    "path": "/notifications",
+    "status": 200,
+    "type": "text/html; charset=utf-8",
+    "csp": true
+  },
+  {
+    "path": "/users",
+    "status": 200,
+    "type": "text/html; charset=utf-8",
+    "csp": true
+  },
+  {
+    "path": "/settings",
+    "status": 200,
+    "type": "text/html; charset=utf-8",
+    "csp": true
+  },
+  {
+    "path": "/team",
+    "status": 200,
+    "type": "text/html; charset=utf-8",
+    "csp": true
+  },
+  {
+    "path": "/automations",
+    "status": 200,
+    "type": "text/html; charset=utf-8",
+    "csp": true
+  },
+  {
+    "path": "/calendar",
+    "status": 200,
+    "type": "text/html; charset=utf-8",
+    "csp": true
+  },
+  {
+    "path": "/crm_pro_enterprise/code",
+    "status": 200,
+    "type": "text/html; charset=utf-8",
+    "csp": true
+  },
+  {
+    "path": "/crm_pro_enterprise/code.html",
+    "status": 200,
+    "type": "text/html; charset=utf-8",
+    "csp": true
+  },
+  {
+    "path": "/contacts_crm_pro/code.html",
+    "status": 200,
+    "type": "text/html; charset=utf-8",
+    "csp": true
+  },
+  {
+    "path": "/api/v1/health",
+    "status": 200,
+    "type": "application/json",
+    "csp": true,
+    "json": {
+      "status": "healthy",
+      "service": "b2b-crm-api"
+    }
+  },
+  {
+    "path": "/api/v1/health/ready",
+    "status": 200,
+    "type": "application/json",
+    "csp": true,
+    "json": {
+      "status": "ready"
+    }
+  },
+  {
+    "path": "/api/v1/auth/config",
+    "status": 200,
+    "type": "application/json",
+    "csp": true,
+    "json": {
+      "provider": "supabase",
+      "recovery_available": true,
+      "session_hours": 8,
+      "remember_days": 30,
+      "sso_available": false
+    }
+  },
+  {
+    "path": "/api/v1/auth/me",
+    "status": 401,
+    "type": "application/json",
+    "csp": true,
+    "json": {
+      "detail": "Please sign in"
+    }
+  }
+]
