@@ -2,7 +2,10 @@
 import fs from 'node:fs';
 const frontend=JSON.parse(fs.readFileSync('stitch_crm_pro_enterprise_suite/vercel.json','utf8'));
 frontend.installCommand='npm ci --include=dev';
-frontend.rewrites=frontend.rewrites.filter(r=>!r.source.startsWith('/api/')&&r.source!=='/:path*/code').map(r=>({...r,destination:r.destination.replace(/\.html$/,'')}));
+// Explicit file destinations avoid cleanUrls redirects losing the HTML route in Services.
+frontend.cleanUrls=false;
+frontend.rewrites=frontend.rewrites.filter(r=>!r.source.startsWith('/api/')&&r.source!=='/:path*/code').map(r=>({...r,destination:r.destination.replace(/\.html$/,'')+'.html'}));
+frontend.rewrites.push({source:'/:path*/code',destination:'/:path*/code.html'});
 fs.writeFileSync('stitch_crm_pro_enterprise_suite/vercel.json',JSON.stringify(frontend,null,2)+'\n');
 const config={
   $schema:'https://openapi.vercel.sh/vercel.json',

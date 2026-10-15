@@ -6,68 +6,72 @@
       "buildCommand": "npm run build",
       "outputDirectory": "dist",
       "framework": "vite",
-      "cleanUrls": true,
+      "cleanUrls": false,
       "trailingSlash": false,
       "rewrites": [
         {
           "source": "/login",
-          "destination": "/crm_pro_enterprise/code"
+          "destination": "/crm_pro_enterprise/code.html"
         },
         {
           "source": "/dashboard",
-          "destination": "/analytics_reports_crm_pro/code"
+          "destination": "/analytics_reports_crm_pro/code.html"
         },
         {
           "source": "/analytics",
-          "destination": "/analytics_reports_crm_pro/code"
+          "destination": "/analytics_reports_crm_pro/code.html"
         },
         {
           "source": "/reports",
-          "destination": "/analytics_reports_crm_pro/code"
+          "destination": "/analytics_reports_crm_pro/code.html"
         },
         {
           "source": "/companies",
-          "destination": "/companies_crm_pro/code"
+          "destination": "/companies_crm_pro/code.html"
         },
         {
           "source": "/contacts",
-          "destination": "/contacts_crm_pro/code"
+          "destination": "/contacts_crm_pro/code.html"
         },
         {
           "source": "/leads",
-          "destination": "/leads_management_crm_pro/code"
+          "destination": "/leads_management_crm_pro/code.html"
         },
         {
           "source": "/deals",
-          "destination": "/workflow_automation_crm_pro/code"
+          "destination": "/workflow_automation_crm_pro/code.html"
         },
         {
           "source": "/tasks",
-          "destination": "/tasks_activities_crm_pro/code"
+          "destination": "/tasks_activities_crm_pro/code.html"
         },
         {
           "source": "/notifications",
-          "destination": "/notifications_crm_pro/code"
+          "destination": "/notifications_crm_pro/code.html"
         },
         {
           "source": "/users",
-          "destination": "/user_management_crm_pro/code"
+          "destination": "/user_management_crm_pro/code.html"
         },
         {
           "source": "/settings",
-          "destination": "/settings_crm_pro/code"
+          "destination": "/settings_crm_pro/code.html"
         },
         {
           "source": "/team",
-          "destination": "/team_performance_crm_pro/code"
+          "destination": "/team_performance_crm_pro/code.html"
         },
         {
           "source": "/automations",
-          "destination": "/automations_crm_pro/code"
+          "destination": "/automations_crm_pro/code.html"
         },
         {
           "source": "/calendar",
-          "destination": "/calendar_crm_pro/code"
+          "destination": "/calendar_crm_pro/code.html"
+        },
+        {
+          "source": "/:path*/code",
+          "destination": "/:path*/code.html"
         }
       ],
       "headers": [
