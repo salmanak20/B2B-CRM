@@ -97,7 +97,7 @@
           ]
         }
       ],
-      "installCommand": "npm ci",
+      "installCommand": "npm ci --include=dev",
       "devCommand": "npm run dev -- --host 127.0.0.1"
     },
     "backend": {
