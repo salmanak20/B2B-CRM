@@ -13,6 +13,9 @@ def get_notifications(
     skip: int = 0,
     limit: int = 100
 ):
+    # Request-driven delivery works on serverless hosts without a background worker.
+    from app.services.reminders import deliver_due
+    deliver_due(db,current_user.id)
     return crud_notification.get_notifications(db=db, user_id=current_user.id, skip=skip, limit=limit)
 
 @router.patch("/read-all", response_model=dict)

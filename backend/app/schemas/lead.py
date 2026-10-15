@@ -1,3 +1,4 @@
+from app.schemas.related import NamedUser, NamedCompany, NamedContact
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional
 from datetime import datetime
@@ -25,6 +26,7 @@ class LeadSource(str, Enum):
     other = "other"
 
 class LeadBase(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, allow_inf_nan=False, extra="forbid")
     title: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
     company_id: Optional[int] = None
@@ -38,6 +40,7 @@ class LeadCreate(LeadBase):
     owner_id: Optional[int] = None
 
 class LeadUpdate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, allow_inf_nan=False, extra="forbid")
     title: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
     company_id: Optional[int] = None
@@ -51,6 +54,9 @@ class LeadUpdate(BaseModel):
 class LeadResponse(LeadBase):
     id: int
     owner_id: int
+    company: NamedCompany | None = None
+    contact: NamedContact | None = None
+    owner: NamedUser | None = None
     name: str
     created_at: datetime
     updated_at: Optional[datetime] = None

@@ -110,6 +110,8 @@ def update_existing_pipeline_stage(
     final_is_won = stage_in.is_won if stage_in.is_won is not None else stage.is_won
     final_is_lost = stage_in.is_lost if stage_in.is_lost is not None else stage.is_lost
     ensure_stage_state_is_valid(final_is_closed, final_is_won, final_is_lost)
+    if count_stage_deals(db,stage_id) and (final_is_closed,final_is_won,final_is_lost)!=(stage.is_closed,stage.is_won,stage.is_lost):
+        raise HTTPException(409,"Move the deals out of this stage before changing its open/won/lost type")
     return update_pipeline_stage(db, stage, stage_in)
 
 

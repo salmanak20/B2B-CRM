@@ -1,0 +1,252 @@
+[
+  {
+    "route": "/dashboard",
+    "viewport": 1440,
+    "body": 1440
+  },
+  {
+    "route": "/companies",
+    "viewport": 1440,
+    "body": 1440
+  },
+  {
+    "route": "/contacts",
+    "viewport": 1440,
+    "body": 1440
+  },
+  {
+    "route": "/leads",
+    "viewport": 1440,
+    "body": 1440
+  },
+  {
+    "route": "/deals",
+    "viewport": 1440,
+    "body": 1440
+  },
+  {
+    "route": "/tasks",
+    "viewport": 1440,
+    "body": 1440
+  },
+  {
+    "route": "/settings",
+    "viewport": 1440,
+    "body": 1440
+  },
+  {
+    "route": "/users",
+    "viewport": 1440,
+    "body": 1440
+  },
+  {
+    "route": "/automations",
+    "viewport": 1440,
+    "body": 1440
+  },
+  {
+    "route": "/calendar",
+    "viewport": 1440,
+    "body": 1440
+  },
+  {
+    "route": "/dashboard",
+    "viewport": 1024,
+    "body": 1024
+  },
+  {
+    "route": "/companies",
+    "viewport": 1024,
+    "body": 1024
+  },
+  {
+    "route": "/contacts",
+    "viewport": 1024,
+    "body": 1024
+  },
+  {
+    "route": "/leads",
+    "viewport": 1024,
+    "body": 1024
+  },
+  {
+    "route": "/deals",
+    "viewport": 1024,
+    "body": 1024
+  },
+  {
+    "route": "/tasks",
+    "viewport": 1024,
+    "body": 1024
+  },
+  {
+    "route": "/settings",
+    "viewport": 1024,
+    "body": 1024
+  },
+  {
+    "route": "/users",
+    "viewport": 1024,
+    "body": 1024
+  },
+  {
+    "route": "/automations",
+    "viewport": 1024,
+    "body": 1024
+  },
+  {
+    "route": "/calendar",
+    "viewport": 1024,
+    "body": 1024
+  },
+  {
+    "route": "/dashboard",
+    "viewport": 768,
+    "body": 768
+  },
+  {
+    "route": "/companies",
+    "viewport": 768,
+    "body": 768
+  },
+  {
+    "route": "/contacts",
+    "viewport": 768,
+    "body": 768
+  },
+  {
+    "route": "/leads",
+    "viewport": 768,
+    "body": 768
+  },
+  {
+    "route": "/deals",
+    "viewport": 768,
+    "body": 768
+  },
+  {
+    "route": "/tasks",
+    "viewport": 768,
+    "body": 768
+  },
+  {
+    "route": "/settings",
+    "viewport": 768,
+    "body": 768
+  },
+  {
+    "route": "/users",
+    "viewport": 768,
+    "body": 768
+  },
+  {
+    "route": "/automations",
+    "viewport": 768,
+    "body": 768
+  },
+  {
+    "route": "/calendar",
+    "viewport": 768,
+    "body": 768
+  },
+  {
+    "route": "/dashboard",
+    "viewport": 375,
+    "body": 375
+  },
+  {
+    "route": "/companies",
+    "viewport": 375,
+    "body": 375
+  },
+  {
+    "route": "/contacts",
+    "viewport": 375,
+    "body": 375
+  },
+  {
+    "route": "/leads",
+    "viewport": 375,
+    "body": 375
+  },
+  {
+    "route": "/deals",
+    "viewport": 375,
+    "body": 375
+  },
+  {
+    "route": "/tasks",
+    "viewport": 375,
+    "body": 375
+  },
+  {
+    "route": "/settings",
+    "viewport": 375,
+    "body": 375
+  },
+  {
+    "route": "/users",
+    "viewport": 375,
+    "body": 375
+  },
+  {
+    "route": "/automations",
+    "viewport": 375,
+    "body": 375
+  },
+  {
+    "route": "/calendar",
+    "viewport": 375,
+    "body": 375
+  },
+  {
+    "route": "/dashboard",
+    "viewport": 430,
+    "body": 430
+  },
+  {
+    "route": "/companies",
+    "viewport": 430,
+    "body": 430
+  },
+  {
+    "route": "/contacts",
+    "viewport": 430,
+    "body": 430
+  },
+  {
+    "route": "/leads",
+    "viewport": 430,
+    "body": 430
+  },
+  {
+    "route": "/deals",
+    "viewport": 430,
+    "body": 430
+  },
+  {
+    "route": "/tasks",
+    "viewport": 430,
+    "body": 430
+  },
+  {
+    "route": "/settings",
+    "viewport": 430,
+    "body": 430
+  },
+  {
+    "route": "/users",
+    "viewport": 430,
+    "body": 430
+  },
+  {
+    "route": "/automations",
+    "viewport": 430,
+    "body": 430
+  },
+  {
+    "route": "/calendar",
+    "viewport": 430,
+    "body": 430
+  }
+]

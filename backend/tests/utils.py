@@ -12,7 +12,9 @@ def unique_email(prefix: str = "user") -> str:
 def get_token(client, email: str, password: str) -> str:
     response = client.post("/api/v1/auth/login", data={"username": email, "password": password})
     assert response.status_code == 200
-    return response.json()["access_token"]
+    token=response.json()["access_token"]
+    client.cookies.clear()  # These helpers exercise explicit bearer API clients, not browser sessions.
+    return token
 
 
 def auth_headers(client, email: str, password: str = "pass") -> dict[str, str]:

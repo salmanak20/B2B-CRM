@@ -1,0 +1,155 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "frontend": {
+      "root": "stitch_crm_pro_enterprise_suite",
+      "buildCommand": "npm run build",
+      "outputDirectory": "dist",
+      "framework": "vite",
+      "cleanUrls": true,
+      "trailingSlash": false,
+      "rewrites": [
+        {
+          "source": "/login",
+          "destination": "/crm_pro_enterprise/code"
+        },
+        {
+          "source": "/dashboard",
+          "destination": "/analytics_reports_crm_pro/code"
+        },
+        {
+          "source": "/analytics",
+          "destination": "/analytics_reports_crm_pro/code"
+        },
+        {
+          "source": "/reports",
+          "destination": "/analytics_reports_crm_pro/code"
+        },
+        {
+          "source": "/companies",
+          "destination": "/companies_crm_pro/code"
+        },
+        {
+          "source": "/contacts",
+          "destination": "/contacts_crm_pro/code"
+        },
+        {
+          "source": "/leads",
+          "destination": "/leads_management_crm_pro/code"
+        },
+        {
+          "source": "/deals",
+          "destination": "/workflow_automation_crm_pro/code"
+        },
+        {
+          "source": "/tasks",
+          "destination": "/tasks_activities_crm_pro/code"
+        },
+        {
+          "source": "/notifications",
+          "destination": "/notifications_crm_pro/code"
+        },
+        {
+          "source": "/users",
+          "destination": "/user_management_crm_pro/code"
+        },
+        {
+          "source": "/settings",
+          "destination": "/settings_crm_pro/code"
+        },
+        {
+          "source": "/team",
+          "destination": "/team_performance_crm_pro/code"
+        },
+        {
+          "source": "/automations",
+          "destination": "/automations_crm_pro/code"
+        },
+        {
+          "source": "/calendar",
+          "destination": "/calendar_crm_pro/code"
+        }
+      ],
+      "headers": [
+        {
+          "source": "/(.*)",
+          "headers": [
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "X-Frame-Options",
+              "value": "DENY"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "same-origin"
+            },
+            {
+              "key": "Permissions-Policy",
+              "value": "camera=(), microphone=(), geolocation=()"
+            },
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+            }
+          ]
+        }
+      ],
+      "installCommand": "npm ci",
+      "devCommand": "npm run dev -- --host 127.0.0.1"
+    },
+    "backend": {
+      "root": "backend",
+      "framework": "fastapi",
+      "entrypoint": "app.main:app",
+      "functions": {
+        "app/main.py": {
+          "excludeFiles": "{.venv/**,.env,.env.*,tests/**,.backups/**,__pycache__/**,**/__pycache__/**,alembic/**,*.log}"
+        }
+      }
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/v1/:path*",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "frontend"
+      }
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "same-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+        }
+      ]
+    }
+  ]
+}

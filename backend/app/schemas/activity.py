@@ -1,3 +1,4 @@
+from pydantic import ConfigDict
 from datetime import datetime
 from enum import Enum
 from typing import Optional
@@ -16,6 +17,7 @@ class ActivityType(str, Enum):
 
 
 class ActivityBase(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, allow_inf_nan=False, extra="forbid")
     type: ActivityType
     subject: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
@@ -31,6 +33,7 @@ class ActivityCreate(ActivityBase):
 
 
 class ActivityUpdate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, allow_inf_nan=False, extra="forbid")
     type: Optional[ActivityType] = None
     subject: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None

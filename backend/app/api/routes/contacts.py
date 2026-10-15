@@ -30,6 +30,8 @@ def create_new_contact(contact_in: ContactCreate, db: SessionDep, current_user: 
 def read_contacts(
     db: SessionDep,
     current_user: CurrentActiveUser,
+    sort_by: str = "id",
+    sort_dir: str = Query("asc", pattern="^(asc|desc)$"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     search: Optional[str] = None,
@@ -43,7 +45,7 @@ def read_contacts(
     if current_user.role.name not in {"admin", "administrator", "sales_manager", "viewer"}:
         scoped_owner_id = current_user.id
     items, total = get_contacts(
-        db=db,
+        db=db, sort_by=sort_by, sort_dir=sort_dir,
         skip=skip,
         limit=page_size,
         search=search,
@@ -88,5 +90,10 @@ def delete_existing_contact(contact_id: int, db: SessionDep, current_user: Curre
     if not contact:
         raise HTTPException(status_code=404, detail="Contact not found")
     ensure_can_modify_crm_record(contact.owner_id, current_user)
+    if any((contact.leads, contact.deals, contact.tasks, contact.activities)):
+        raise HTTPException(409, "Contact has related records. Reassign or remove those records first.")
+    from app.api.routes.workspace import ensure_no_attachments
+    ensure_no_attachments(db,'contacts',contact_id)
     delete_contact(db=db, db_contact=contact)
+    log_event(db,'Contact Deleted',current_user.id,'Contact',contact_id,'Contact removed')
     return {"ok": True}

@@ -162,7 +162,7 @@ def get_dashboard_summary(db: Session, current_user: User, start_date: date | No
         "lost_deals": deals[2],
         "total_pipeline_value": _decimal(deals[4]),
         "open_pipeline_value": _decimal(deals[6]),
-        "won_revenue": _decimal(deals[5]),
+        "won_revenue": won_revenue_for_period(db,current_user,start_date,end_date),
         "total_tasks": tasks[0],
         "pending_tasks": tasks[1],
         "completed_tasks": tasks[3],
@@ -180,7 +180,7 @@ def get_sales_performance(db: Session, current_user: User, start_date: date | No
         "lost_deals": lost,
         "open_deals": open_,
         "total_deal_value": _decimal(value),
-        "won_revenue": _decimal(won_revenue),
+        "won_revenue": won_revenue_for_period(db,current_user,start_date,end_date),
         "average_deal_value": _money(average),
         "win_rate": _percentage(won, total),
         "loss_rate": _percentage(lost, total),
@@ -286,10 +286,16 @@ def get_pipeline_analytics(db: Session, current_user: User, start_date: date | N
         "value_by_stage": stage_groups,
         "deal_count_by_stage": stage_groups,
         "weighted_pipeline_value": _decimal(weighted_value),
-        "won_revenue": _decimal(won_revenue),
+        "won_revenue": won_revenue_for_period(db,current_user,start_date,end_date),
         "lost_value": _decimal(lost_value),
     }
 
+
+def won_revenue_for_period(db,current_user,start_date,end_date):
+    query=select(func.coalesce(func.sum(Deal.value),0)).where(Deal.status=="won")
+    query=_apply_owner_scope(query,Deal,current_user)
+    query=_apply_date_range(query,Deal.closed_at,start_date,end_date)
+    return _decimal(db.scalar(query))
 
 def get_revenue_trend(
     db: Session,
@@ -298,12 +304,12 @@ def get_revenue_trend(
     start_date: date | None,
     end_date: date | None,
 ) -> dict:
-    won_at = func.coalesce(Deal.updated_at, Deal.created_at)
+    won_at = Deal.closed_at
     query = select(Deal)
     query = _apply_owner_scope(query, Deal, current_user).where(Deal.status == "won")
     query = _apply_date_range(query, won_at, start_date, end_date)
     deal_subquery = query.subquery()
-    period_column = _period_column(db, period, func.coalesce(deal_subquery.c.updated_at, deal_subquery.c.created_at))
+    period_column = case((deal_subquery.c.closed_at.is_not(None),_period_column(db,period,deal_subquery.c.closed_at)),else_="Unknown close date")
     rows = db.execute(
         select(
             period_column.label("period"),
@@ -366,6 +372,10 @@ def get_team_performance(db: Session, current_user: User, start_date: date | Non
     lead_subquery = _lead_query(current_user, start_date, end_date).subquery()
     deal_subquery = _deal_query(current_user, start_date, end_date).subquery()
     task_subquery = _task_query(current_user, start_date, end_date).subquery()
+    revenue_query=select(Deal.owner_id.label('user_id'),func.sum(Deal.value).label('revenue')).where(Deal.status=='won')
+    revenue_query=_apply_owner_scope(revenue_query,Deal,current_user)
+    revenue_query=_apply_date_range(revenue_query,Deal.closed_at,start_date,end_date)
+    revenue=revenue_query.group_by(Deal.owner_id).subquery()
 
     leads = (
         select(lead_subquery.c.owner_id.label("user_id"), func.count(lead_subquery.c.id).label("leads"))
@@ -407,12 +417,13 @@ def get_team_performance(db: Session, current_user: User, start_date: date | Non
             func.coalesce(deals.c.won_deals, 0),
             func.coalesce(deals.c.lost_deals, 0),
             func.coalesce(deals.c.pipeline_value, 0),
-            func.coalesce(deals.c.won_revenue, 0),
+            func.coalesce(revenue.c.revenue, 0),
             func.coalesce(tasks.c.completed_tasks, 0),
         )
         .join(Role, User.role_id == Role.id)
         .outerjoin(leads, leads.c.user_id == User.id)
         .outerjoin(deals, deals.c.user_id == User.id)
+        .outerjoin(revenue, revenue.c.user_id == User.id)
         .outerjoin(tasks, tasks.c.user_id == User.id)
         .where(Role.name.in_(["sales_rep", "sales_manager"]))
         .order_by(User.id)

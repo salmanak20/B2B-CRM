@@ -4,7 +4,7 @@ from app.models.permission import Permission
 from app.models.pipeline import Pipeline
 from app.models.pipeline_stage import PipelineStage
 
-def seed_db(db=None):
+def seed_db(db=None, include_pipeline=False):
     close_db = False
     if not db:
         db = SessionLocal()
@@ -75,7 +75,8 @@ def seed_db(db=None):
     roles["viewer"].permissions = v_perms
     
     db.commit()
-    seed_default_pipeline(db)
+    if include_pipeline:
+        seed_default_pipeline(db)
     print("Database seeded successfully.")
     if close_db:
         db.close()

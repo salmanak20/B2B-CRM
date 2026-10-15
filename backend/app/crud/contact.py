@@ -1,3 +1,4 @@
+from app.crud.sorting import sorted_query
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func, or_
 from app.models.contact import Contact
@@ -21,6 +22,8 @@ def get_contact(db: Session, contact_id: int) -> Optional[Contact]:
 
 def get_contacts(
     db: Session, 
+    sort_by: str = "id",
+    sort_dir: str = "asc",
     skip: int = 0, 
     limit: int = 20, 
     search: Optional[str] = None,
@@ -46,7 +49,7 @@ def get_contacts(
         query = query.where(Contact.owner_id == owner_id)
         
     total = db.scalar(select(func.count()).select_from(query.subquery())) or 0
-    items = list(db.scalars(query.offset(skip).limit(limit)).all())
+    items = list(db.scalars(sorted_query(query, Contact, sort_by, sort_dir).offset(skip).limit(limit)).all())
     return items, total
 
 def update_contact(db: Session, db_contact: Contact, contact_in: ContactUpdate) -> Contact:

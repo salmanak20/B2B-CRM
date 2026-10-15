@@ -1,3 +1,5 @@
+from app.schemas.related import NamedUser, NamedCompany, NamedContact
+from pydantic import ConfigDict
 from datetime import datetime
 from enum import Enum
 from typing import Optional
@@ -22,6 +24,7 @@ class TaskStatus(str, Enum):
 
 
 class TaskBase(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, allow_inf_nan=False, extra="forbid")
     title: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
     assigned_to_id: Optional[int] = None
@@ -39,6 +42,7 @@ class TaskCreate(TaskBase):
 
 
 class TaskUpdate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, allow_inf_nan=False, extra="forbid")
     title: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
     owner_id: Optional[int] = None
@@ -53,16 +57,20 @@ class TaskUpdate(BaseModel):
 
 
 class TaskStatusUpdate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, allow_inf_nan=False, extra="forbid")
     status: TaskStatus
 
 
 class TaskAssigneeUpdate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, allow_inf_nan=False, extra="forbid")
     assigned_to_id: Optional[int] = None
 
 
 class TaskResponse(TaskBase):
     id: int
     owner_id: int
+    assigned_to: NamedUser | None = None
+    owner: NamedUser | None = None
     completed_at: Optional[datetime] = None
     created_at: datetime
     updated_at: Optional[datetime] = None

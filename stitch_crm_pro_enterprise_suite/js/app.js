@@ -1,61 +1,22 @@
-import { checkAuth, logout, getCurrentUser } from './auth.js';
-import { applyRoleUI, getUserRole } from './rbac.js';
-import { initGlobalSearch } from './search.js';
-import { initNotifications } from './notifications.js';
-import { initExportButtons } from './exports.js';
-
-export async function initApp() {
-  const user = await checkAuth();
-  if (!user && !window.location.pathname.includes('/crm_pro_enterprise/')) {
-    return;
-  }
-
-  // Bind Sidebar Links
-  bindSidebarNav();
-
-  // Apply RBAC UI hiding
-  applyRoleUI();
-
-  // Bind Header Search & Notifications
-  initGlobalSearch();
-  initNotifications();
-  initExportButtons();
-
-  // Bind Logout Button
-  document.querySelectorAll('[data-action="logout"], button:has(span:contains("logout")), a[href*="login"]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      logout();
-    });
-  });
+import {checkAuth,getCurrentUser,logout} from './auth.js';
+import {apiGet,apiPost} from './api.js';
+import {esc,icon,toast,showError,setDisplayTimezone} from './ui.js';
+import {isAdmin,isManagerOrAdmin,getRoleDisplayName} from './rbac.js';
+import {initGlobalSearch} from './search.js';
+export let workspace={currency:'USD',timezone:'UTC',name:'CRM Pro'};
+export async function initApp(active='Dashboard'){
+  let user;try{user=await checkAuth();}catch(error){showError(document.getElementById('app'),error);return null;}if(!user)return null;
+  try{workspace=await apiGet('/workspace');}catch(error){showError(document.getElementById('app'),error);return null;}
+  setDisplayTimezone(user.preferences?.timezone||workspace.timezone||'UTC');
+  const items=[['Dashboard','/dashboard','grid'],['Leads','/leads','chart'],['Contacts','/contacts','users'],['Companies','/companies','company'],['Deals','/deals','deal'],['Tasks','/tasks','task'],['Calendar','/calendar','calendar'],...(isManagerOrAdmin()?[['Automations','/automations','bolt']]:[]),['Notifications','/notifications','bell'],['Analytics','/analytics','chart'],['Reports','/reports','download'],...(isManagerOrAdmin()?[['Team','/team','users']]:[]),...(isAdmin()?[['User Management','/users','users']]:[]),['Settings','/settings','settings']];
+  document.title=active+' · '+workspace.name;
+  document.body.classList.toggle('compact',!!user.preferences?.compact_view);
+  document.getElementById('app').innerHTML=`<a class="skip-link" href="#main-content">Skip to content</a><div class="mobile-overlay" id="mobile-nav-overlay"></div><aside class="sidebar" id="sidebar" aria-label="Workspace sidebar"><a href="/dashboard" class="brand"><span class="brand-mark">CP</span><span>${esc(workspace.name)}<small>Enterprise Workspace</small></span></a><nav aria-label="Primary navigation">${items.map(([name,url,i])=>`<a class="nav-link ${name===active?'active':''}" href="${url}"${name===active?' aria-current="page"':''}>${icon(i)}<span>${name}</span></a>`).join('')}</nav><div class="sidebar-footer"><span class="avatar" aria-hidden="true">${esc(user.name?.slice(0,1))}</span><div class="identity"><strong data-user-name>${esc(user.name)}</strong><small>${esc(getRoleDisplayName(user.role.name))}</small></div></div></aside><div class="workspace"><header class="topbar"><div class="topbar-left"><button class="icon-button menu-toggle" id="mobile-menu-btn" aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar">${icon('menu')}</button><span class="breadcrumb">Workspace / ${esc(active)}</span></div><div class="topbar-actions"><div class="search-wrap"><label for="global-search" hidden>Search CRM records</label>${icon('search')}<input id="global-search" data-global-search type="search" placeholder="Search CRM…" autocomplete="off" aria-label="Search CRM records"/></div><a href="/notifications" class="icon-button relative" aria-label="Notifications">${icon('bell')}<span id="unread-count" class="notification-badge" hidden></span></a><button data-action="logout" class="icon-button" aria-label="Sign out">${icon('logout')}</button></div></header><main id="main-content" tabindex="-1"><div class="loading" role="status">Loading ${esc(active.toLowerCase())}…</div></main></div>`;
+  const sidebar=document.getElementById('sidebar'),overlay=document.getElementById('mobile-nav-overlay'),toggle=document.getElementById('mobile-menu-btn');
+  const mq=matchMedia('(max-width:767px)');const sync=()=>{sidebar.inert=mq.matches&&!sidebar.classList.contains('open');};sync();mq.addEventListener('change',sync);
+  function close(){sidebar.classList.remove('open');overlay.classList.remove('open');toggle.setAttribute('aria-expanded','false');sync();toggle.focus();}
+  toggle.onclick=()=>{sidebar.classList.add('open');overlay.classList.add('open');toggle.setAttribute('aria-expanded','true');sync();sidebar.querySelector('a').focus();};overlay.onclick=close;document.addEventListener('keydown',e=>{if(e.key==='Escape'&&sidebar.classList.contains('open'))close();});
+  document.querySelector('[data-action=logout]').onclick=async e=>{const button=e.currentTarget;button.disabled=true;try{await logout();}catch(error){toast(error.message);button.disabled=false;}};
+  initGlobalSearch();refreshNotifications().catch(()=>{});return user;
 }
-
-function bindSidebarNav() {
-  const navMap = {
-    'Dashboard': '../analytics_reports_crm_pro/code.html',
-    'Analytics': '../analytics_reports_crm_pro/code.html',
-    'Companies': '../companies_crm_pro/code.html',
-    'Contacts': '../contacts_crm_pro/code.html',
-    'Leads': '../leads_management_crm_pro/code.html',
-    'Pipelines': '../workflow_automation_crm_pro/code.html',
-    'Workflow': '../workflow_automation_crm_pro/code.html',
-    'Deals': '../workflow_automation_crm_pro/code.html',
-    'Tasks': '../tasks_activities_crm_pro/code.html',
-    'Activities': '../tasks_activities_crm_pro/code.html',
-    'Team': '../team_performance_crm_pro/code.html',
-    'Notifications': '../notifications_crm_pro/code.html',
-    'User Management': '../user_management_crm_pro/code.html',
-    'Settings': '../settings_crm_pro/code.html'
-  };
-
-  const navLinks = document.querySelectorAll('aside a, nav a');
-  navLinks.forEach(link => {
-    const text = link.textContent.trim();
-    for (const [key, targetUrl] of Object.entries(navMap)) {
-      if (text.includes(key)) {
-        link.href = targetUrl;
-        break;
-      }
-    }
-  });
-}
+export async function refreshNotifications(){const list=await apiGet('/notifications/');const unread=list.filter(n=>!n.is_read).length;const badge=document.getElementById('unread-count');if(badge){badge.hidden=!unread;badge.textContent=unread>99?'99+':unread;badge.setAttribute('aria-hidden','true');badge.parentElement.setAttribute('aria-label',`Notifications${unread?`, ${unread} unread`:''}`);}}

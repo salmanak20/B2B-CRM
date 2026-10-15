@@ -1,0 +1,6 @@
+{
+  "engine": "PostgreSQL 18",
+  "host": "isolated local cluster",
+  "migration": "fresh upgrade, downgrade base, reapply head",
+  "tests": "99 passed in 85.46s (0:01:25)"
+}

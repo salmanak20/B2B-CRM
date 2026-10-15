@@ -1,0 +1,8 @@
+{
+  "anonymous_head_status": {
+    "users": 401,
+    "companies": 401
+  },
+  "revision": "f8b3015a0001",
+  "backend_role_bypasses_rls": true
+}

@@ -12,3 +12,6 @@ from app.models.task import Task
 from app.models.activity import Activity
 from app.models.notification import Notification
 from app.models.audit_log import AuditLog
+from app.models.session import AuthSession, RateBucket
+from app.models.workspace import WorkspaceSettings, WorkflowRule, WorkflowRun, Attachment
+from app.models.notification_event import NotificationEvent

@@ -1,17 +1,13 @@
-import { getCurrentUser } from './auth.js';
-import { initApp } from './app.js';
-
-document.addEventListener('DOMContentLoaded', async () => {
-  await initApp();
-
-  const user = getCurrentUser();
-  if (!user) return;
-
-  const nameInput = document.getElementById('profile-name') || document.querySelector('input[value*="Salman"], input[name="name"]');
-  const emailInput = document.getElementById('profile-email') || document.querySelector('input[type="email"]');
-  const roleInput = document.getElementById('profile-role') || document.querySelector('input[value*="Admin"]');
-
-  if (nameInput && user.full_name) nameInput.value = user.full_name;
-  if (emailInput && user.email) emailInput.value = user.email;
-  if (roleInput && user.role) roleInput.value = user.role.name;
-});
+import {initApp,workspace} from './app.js';
+import {apiGet,apiPut,apiPost} from './api.js';
+import {fetchCurrentUser} from './auth.js';
+import {isAdmin} from './rbac.js';
+import {esc,heading,field,showError,toast} from './ui.js';
+async function start(){const user=await initApp('Settings');if(!user)return;const main=document.querySelector('main'),config=await apiGet('/auth/config');main.innerHTML=heading('Settings','Manage your profile, account security and workspace.')+`<div class="grid grid-2"><section class="card card-body"><h2>Personal information</h2><form id="profile-form"><div class="fields">${field('name','Full Name','text',user.name,{required:true,full:true})}<div class="field full"><span class="field-label">Email</span><p>${esc(user.email)}</p><small class="subtle">Email address changes are managed through your identity provider.</small></div>${field('timezone','Display Timezone','text',user.preferences?.timezone||workspace.timezone,{required:true,help:'IANA name such as Asia/Karachi or UTC.'})}${field('compact_view','Table Density','select',String(!!user.preferences?.compact_view),{choices:[['false','Comfortable'],['true','Compact']]})}</div><div data-profile-error></div><div class="modal-footer"><button class="primary" type="submit">Save Changes</button></div></form></section><section class="card card-body"><h2>Change password</h2>${config.provider==='supabase'?`<form id="password-form"><div class="fields">${field('current_password','Current Password','password','',{required:true,full:true,autocomplete:'current-password'})}${field('password','New Password','password','',{required:true,full:true,help:'At least 12 characters and no more than 72 UTF-8 bytes.',autocomplete:'new-password'})}</div><div data-password-error></div><div class="modal-footer"><button class="primary" type="submit">Change Password</button></div></form>`:'<p class="subtle">Password changes and account recovery become available when Supabase Auth is configured. Contact your workspace administrator.</p>'}</section>${isAdmin()?`<section class="card card-body"><h2>Organization settings</h2><form id="workspace-form"><div class="fields">${field('name','Organization Name','text',workspace.name,{required:true,full:true})}${field('timezone','Reporting Timezone','text',workspace.timezone,{required:true})}<div class="field"><span class="field-label">Accounting currency</span><p>USD</p><small class="subtle">This workspace uses one currency to keep revenue totals consistent. Report date filters use UTC days.</small></div></div><div data-workspace-error></div><div class="modal-footer"><button class="primary" type="submit">Save Organization</button></div></form></section>`:''}</div>`;
+  main.querySelectorAll('form').forEach(form=>form.querySelectorAll('input,select,textarea').forEach(input=>{const old=input.id;input.id=form.id+'-'+input.name;const label=form.querySelector('label[for=\"'+old+'\"]');if(label)label.htmlFor=input.id;}));
+  bind('profile-form','[data-profile-error]',async data=>{await apiPut('/users/me',{name:data.name,preferences:{timezone:data.timezone,compact_view:data.compact_view==='true'}});await fetchCurrentUser();toast('Profile saved.');await start();});
+  bind('workspace-form','[data-workspace-error]',async data=>{await apiPut('/workspace',{...data,currency:'USD'});toast('Organization settings saved.');await start();});
+  bind('password-form','[data-password-error]',async data=>{await apiPost('/auth/password',data);location.assign('/login');});
+  function bind(id,errorSelector,save){const form=document.getElementById(id);if(!form)return;form.onsubmit=async e=>{e.preventDefault();const btn=form.querySelector('[type=submit]');if(btn.disabled)return;btn.disabled=true;try{await save(Object.fromEntries(new FormData(form)));}catch(error){showError(form.querySelector(errorSelector),error);}finally{btn.disabled=false;}};}
+}
+start().catch(error=>showError(document.querySelector('main')||document.getElementById('app'),error));

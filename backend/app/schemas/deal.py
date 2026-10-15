@@ -1,3 +1,5 @@
+from app.schemas.related import NamedUser, NamedCompany, NamedContact
+from pydantic import ConfigDict
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
@@ -15,6 +17,7 @@ class DealStatus(str, Enum):
 
 
 class DealBase(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, allow_inf_nan=False, extra="forbid")
     title: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
     company_id: Optional[int] = None
@@ -33,6 +36,7 @@ class DealCreate(DealBase):
 
 
 class DealUpdate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, allow_inf_nan=False, extra="forbid")
     title: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
     owner_id: Optional[int] = None
@@ -48,15 +52,20 @@ class DealUpdate(BaseModel):
 
 
 class DealStageUpdate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, allow_inf_nan=False, extra="forbid")
     stage_id: int
 
 
 class DealResponse(DealBase):
     id: int
     owner_id: int
+    company: NamedCompany | None = None
+    contact: NamedContact | None = None
+    owner: NamedUser | None = None
     status: DealStatus
     created_at: datetime
     updated_at: Optional[datetime] = None
+    closed_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 

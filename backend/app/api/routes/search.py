@@ -37,12 +37,12 @@ def global_search(
     # Base filter for RBAC
     def rbac_filter(query, model):
         if current_user.role.name not in READ_ALL_CRM_ROLES:
-            if hasattr(model, 'owner_id'):
-                return query.filter(model.owner_id == current_user.id)
-            elif hasattr(model, 'assigned_to_id'):
+            if hasattr(model, 'assigned_to_id'):
                 return query.filter(
                     or_(model.owner_id == current_user.id, model.assigned_to_id == current_user.id)
                 )
+            if hasattr(model, 'owner_id'):
+                return query.filter(model.owner_id == current_user.id)
         return query
 
     # Companies
@@ -67,7 +67,7 @@ def global_search(
     )
     cont_q = rbac_filter(cont_q, Contact)
     for c in cont_q.limit(10).all():
-        results["contacts"].append({"id": c.id, "name": f"{c.first_name} {c.last_name}", "email": c.email})
+        results["contacts"].append({"id": c.id, "name": c.name, "first_name": c.first_name, "last_name": c.last_name, "email": c.email})
         
     # Leads
     lead_q = db.query(Lead).filter(

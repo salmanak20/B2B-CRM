@@ -1,0 +1,4 @@
+import fs from 'node:fs';import path from 'node:path';
+const root=path.resolve('dist');if(!fs.existsSync(root))throw new Error('Run npm run build first.');
+const forbidden=[/admin@salmanstudio\.com/i,/Welcome back, Salman Studio/i,/Acme Corporation/i,/Jane Doe/i,/\$2\.4M/,/\$850K/,/mock-token/,/cdn\.tailwindcss\.com/,/localStorage\.setItem\([^)]*crm_access_token/];
+const failures=[];function visit(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){const file=path.join(dir,entry.name);if(entry.isDirectory())visit(file);else if(/\.(html|js|css)$/.test(file)){const text=fs.readFileSync(file,'utf8');for(const pattern of forbidden)if(pattern.test(text))failures.push({file,pattern:String(pattern)});}}}visit(root);if(failures.length)throw new Error(JSON.stringify(failures));console.log('Built assets contain no known demonstration identities, records, figures, mock tokens or runtime Tailwind CDN.');

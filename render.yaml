@@ -19,4 +19,22 @@ services:
       - key: DEBUG
         value: "False"
       - key: CORS_ORIGINS
-        value: "[\"https://your-vercel-domain.vercel.app\"]"
+        value: '["https://b2-b-crm.vercel.app"]'
+      - key: AUTH_PROVIDER
+        value: supabase
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: crm-attachments
+      - key: FRONTEND_URL
+        value: https://b2-b-crm.vercel.app
+      - key: COOKIE_SECURE
+        value: 'true'
+      - key: ALLOW_SELF_REGISTRATION
+        value: 'false'
+      - key: DUE_NOTIFICATIONS_ENABLED
+        value: 'true'

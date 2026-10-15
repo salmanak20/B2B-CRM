@@ -1,0 +1,9 @@
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 8c9121ebd03d, add authentication and authorization
+INFO  [alembic.runtime.migration] Running upgrade 8c9121ebd03d -> 044856b5d8f7, add companies contacts and leads
+INFO  [alembic.runtime.migration] Running upgrade 044856b5d8f7 -> ee53324e3b46, complete phase 3 crm core fields
+INFO  [alembic.runtime.migration] Running upgrade ee53324e3b46 -> ec8106441e51, add deals and sales pipeline
+INFO  [alembic.runtime.migration] Running upgrade ec8106441e51 -> 4d2f1b7c9a01, add tasks and activities
+INFO  [alembic.runtime.migration] Running upgrade 4d2f1b7c9a01 -> 0aa836556f2a, phase 7
+INFO  [alembic.runtime.migration] Running upgrade 0aa836556f2a -> f8b3015a0001, Add server sessions and workspace operations without replacing business rows.

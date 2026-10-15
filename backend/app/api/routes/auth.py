@@ -1,64 +1,143 @@
-from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy import select
 from datetime import timedelta
-
+from urllib.parse import quote
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import BaseModel, EmailStr, field_validator
+from sqlalchemy import select, delete
 from app.api.deps import SessionDep, CurrentActiveUser
-from app.core.security import verify_password, create_access_token
 from app.core.config import settings
+from app.core.security import verify_password, create_access_token
+from app.core.provider import auth_request
+from app.core.sessions import create_session, current_session, session_key, decrypt, revoke_user_sessions
+from app.core.rate_limit import limit_auth
 from app.crud.user import get_user_by_email, create_user
-from app.schemas.auth import Token, UserRegister
-from app.schemas.user import UserResponse
-from app.models.role import Role
 from app.crud.audit_log import log_event
+from app.models.role import Role
+from app.models.user import User
+from app.models.session import AuthSession
+from app.schemas.auth import UserRegister
+from app.schemas.user import UserResponse
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router=APIRouter(prefix="/auth",tags=["auth"])
 
-@router.post("/register", response_model=UserResponse)
-def register(user_in: UserRegister, db: SessionDep, request: Request) -> Any:
-    user = get_user_by_email(db, email=user_in.email)
-    if user:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="The user with this email already exists in the system.",
-        )
-    # Get default role "sales_rep"
-    role = db.scalars(select(Role).where(Role.name == "sales_rep")).first()
-    if not role:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Default role not found. Please seed the database.")
-    
-    user = create_user(db, user_in=user_in, role_id=role.id)
-    
-    # Audit log
-    request_ip = request.client.host if request and request.client else None
-    log_event(db, action="User Created", user_id=user.id, entity="User", entity_id=user.id, description=f"Registered new user {user.email}", ip_address=request_ip)
-    
+class EmailRequest(BaseModel):
+    email: EmailStr
+
+class RecoveryVerify(BaseModel):
+    token_hash: str
+    type: str = "recovery"
+
+class PasswordChange(BaseModel):
+    password: str
+    current_password: str | None = None
+    _validate_password = field_validator("password")(UserRegister.secure_password.__func__)
+
+def linked_user(db, identity):
+    if not identity.get("id"):
+        raise HTTPException(401,"Invalid provider identity")
+    user=db.scalar(select(User).where(User.auth_user_id==identity.get("id")))
+    if not user or not user.is_active or not identity.get("email_confirmed_at"):
+        raise HTTPException(401,"This account is not active in this workspace. Contact your administrator.")
     return user
 
-@router.post("/login", response_model=Token)
-def login(db: SessionDep, request: Request, form_data: OAuth2PasswordRequestForm = Depends()) -> Any:
-    # form_data.username is the email in OAuth2
-    user = get_user_by_email(db, email=form_data.username)
-    if not user or not verify_password(form_data.password, user.password_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email or password")
-    elif not user.is_active:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Inactive user")
-        
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    
-    # Audit log
-    request_ip = request.client.host if request and request.client else None
-    log_event(db, action="Login", user_id=user.id, entity="User", entity_id=user.id, description="User logged in", ip_address=request_ip)
-    
-    return {
-        "access_token": create_access_token(
-            user.id, expires_delta=access_token_expires
-        ),
-        "token_type": "bearer",
-        "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-    }
+@router.get("/config")
+def auth_config():
+    return {"provider":settings.AUTH_PROVIDER,"recovery_available":settings.AUTH_PROVIDER=="supabase",
+            "session_hours":settings.SESSION_HOURS,"remember_days":settings.REMEMBER_DAYS,"sso_available":False}
 
-@router.get("/me", response_model=UserResponse)
-def read_current_user(current_user: CurrentActiveUser) -> Any:
+@router.post("/register",response_model=UserResponse)
+def register(user_in:UserRegister,db:SessionDep,request:Request):
+    if not settings.ALLOW_SELF_REGISTRATION or settings.AUTH_PROVIDER!="legacy":
+        raise HTTPException(403,"Ask your administrator for an invitation")
+    limit_auth(db,request,user_in.email,"register")
+    if get_user_by_email(db,user_in.email.lower()):
+        raise HTTPException(409,"An account with this email already exists")
+    role=db.scalar(select(Role).where(Role.name=="sales_rep"))
+    if not role:
+        raise HTTPException(503,"Workspace has not been initialized")
+    user_in.email=user_in.email.lower()
+    user=create_user(db,user_in,role.id)
+    log_event(db,"User Created",user.id,"User",user.id,"Account registered")
+    return user
+
+@router.post("/login")
+def login(db:SessionDep,request:Request,response:Response,form:OAuth2PasswordRequestForm=Depends()):
+    limit_auth(db,request,form.username)
+    remember=request.query_params.get("remember")=="true"
+    provider=None
+    if settings.AUTH_PROVIDER=="supabase":
+        provider=auth_request("POST","/token?grant_type=password",{"email":form.username,"password":form.password})
+        user=linked_user(db,provider.get("user",{}))
+    else:
+        user=get_user_by_email(db,form.username.lower())
+        if not user or not verify_password(form.password,user.password_hash) or not user.is_active:
+            raise HTTPException(401,"Incorrect email or password")
+    previous=request.cookies.get(settings.SESSION_COOKIE_NAME)
+    if previous:
+        db.execute(delete(AuthSession).where(AuthSession.id==session_key(previous)))
+    create_session(db,response,user,remember,provider)
+    log_event(db,"Login",user.id,"User",user.id,"User signed in")
+    result={"user":UserResponse.model_validate(user).model_dump(mode="json"),"token_type":"cookie",
+            "expires_in":(settings.REMEMBER_DAYS*86400 if remember else settings.SESSION_HOURS*3600)}
+    if settings.AUTH_PROVIDER=="legacy" and settings.ENVIRONMENT!="production":
+        result.update(access_token=create_access_token(user.id,expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)),token_type="bearer")
+    return result
+
+@router.get("/me",response_model=UserResponse)
+def me(current_user:CurrentActiveUser):
     return current_user
+
+@router.post("/logout",status_code=204)
+def logout(db:SessionDep,request:Request,response:Response):
+    raw=request.cookies.get(settings.SESSION_COOKIE_NAME)
+    if raw:
+        session=db.get(AuthSession,session_key(raw))
+        if session:
+            if settings.AUTH_PROVIDER=="supabase" and session.access_token:
+                try:
+                    auth_request("POST","/logout?scope=local",token=decrypt(session.access_token))
+                except HTTPException:
+                    pass
+            db.delete(session)
+            db.commit()
+    response.delete_cookie(settings.SESSION_COOKIE_NAME,path="/api",secure=settings.COOKIE_SECURE,httponly=True,samesite="lax")
+
+@router.post("/forgot-password")
+def forgot(body:EmailRequest,db:SessionDep,request:Request):
+    limit_auth(db,request,body.email,"recovery")
+    if settings.AUTH_PROVIDER!="supabase":
+        raise HTTPException(503,"Account recovery requires the configured production identity provider")
+    try:
+        auth_request("POST","/recover?redirect_to="+quote(settings.FRONTEND_URL.rstrip('/')+"/login",safe=""),{"email":str(body.email)})
+    except HTTPException as error:
+        if error.status_code>=500 or error.status_code==429:
+            raise
+    return {"message":"If this account exists, a recovery email will arrive shortly."}
+
+@router.post("/recovery/verify")
+def recovery(body:RecoveryVerify,db:SessionDep,request:Request,response:Response):
+    limit_auth(db,request,"recovery-link","verify")
+    if settings.AUTH_PROVIDER!="supabase" or body.type not in {"recovery","invite"}:
+        raise HTTPException(400,"Invalid recovery link")
+    data=auth_request("POST","/verify",{"token_hash":body.token_hash,"type":body.type})
+    user=linked_user(db,data.get("user",{}))
+    create_session(db,response,user,provider=data,recovery=True)
+    return {"message":"Link verified. Set a new password."}
+
+@router.post("/password")
+def change_password(body:PasswordChange,db:SessionDep,request:Request,response:Response,current_user:CurrentActiveUser):
+    if settings.AUTH_PROVIDER!="supabase":
+        raise HTTPException(503,"Password changes require the production identity provider")
+    session=current_session(db,request.cookies.get(settings.SESSION_COOKIE_NAME))
+    if not session or not session.recovery:
+        if not body.current_password:
+            raise HTTPException(422,"Enter your current password")
+        auth_request("POST","/token?grant_type=password",{"email":current_user.email,"password":body.current_password})
+    if not session:
+        raise HTTPException(401,"Please sign in again")
+    auth_request("PUT","/user",{"password":body.password},token=decrypt(session.access_token))
+    auth_request("POST","/logout?scope=global",token=decrypt(session.access_token))
+    revoke_user_sessions(db,current_user.id)
+    log_event(db,"Password Changed",current_user.id,"User",current_user.id,"Password changed using identity provider")
+    response.delete_cookie(settings.SESSION_COOKIE_NAME,path="/api")
+    return {"message":"Password updated. Please sign in again."}

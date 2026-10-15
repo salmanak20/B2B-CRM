@@ -1,0 +1,106 @@
+[
+  {
+    "route": "/dashboard",
+    "violations": [],
+    "width": {
+      "viewport": 1280,
+      "document": 1280
+    }
+  },
+  {
+    "route": "/companies",
+    "violations": [],
+    "width": {
+      "viewport": 1280,
+      "document": 1280
+    }
+  },
+  {
+    "route": "/contacts",
+    "violations": [],
+    "width": {
+      "viewport": 1280,
+      "document": 1280
+    }
+  },
+  {
+    "route": "/leads",
+    "violations": [],
+    "width": {
+      "viewport": 1280,
+      "document": 1280
+    }
+  },
+  {
+    "route": "/deals",
+    "violations": [],
+    "width": {
+      "viewport": 1280,
+      "document": 1280
+    }
+  },
+  {
+    "route": "/tasks",
+    "violations": [],
+    "width": {
+      "viewport": 1280,
+      "document": 1280
+    }
+  },
+  {
+    "route": "/calendar",
+    "violations": [],
+    "width": {
+      "viewport": 1280,
+      "document": 1280
+    }
+  },
+  {
+    "route": "/notifications",
+    "violations": [],
+    "width": {
+      "viewport": 1280,
+      "document": 1280
+    }
+  },
+  {
+    "route": "/settings",
+    "violations": [],
+    "width": {
+      "viewport": 1280,
+      "document": 1280
+    }
+  },
+  {
+    "route": "/users",
+    "violations": [],
+    "width": {
+      "viewport": 1280,
+      "document": 1280
+    }
+  },
+  {
+    "route": "/automations",
+    "violations": [],
+    "width": {
+      "viewport": 1280,
+      "document": 1280
+    }
+  },
+  {
+    "route": "/reports",
+    "violations": [],
+    "width": {
+      "viewport": 1280,
+      "document": 1280
+    }
+  },
+  {
+    "route": "/team",
+    "violations": [],
+    "width": {
+      "viewport": 1280,
+      "document": 1280
+    }
+  }
+]

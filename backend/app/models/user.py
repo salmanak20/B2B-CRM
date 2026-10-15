@@ -1,11 +1,14 @@
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, Boolean, ForeignKey, DateTime
+from sqlalchemy import String, Boolean, ForeignKey, DateTime, JSON
 from sqlalchemy.sql import func
 from datetime import datetime
 from typing import List
 from app.db.session import Base
 
 class User(Base):
+    @property
+    def auth_linked(self):
+        return bool(self.auth_user_id)
     __tablename__ = "users"
     
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
@@ -14,6 +17,8 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"), nullable=False)
+    auth_user_id: Mapped[str | None] = mapped_column(String(36), unique=True, nullable=True)
+    preferences: Mapped[dict] = mapped_column(JSON, default=dict)
     
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), onupdate=func.now(), nullable=True)

@@ -1,3 +1,4 @@
+from app.crud.sorting import sorted_query
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func, or_
 from app.models.lead import Lead
@@ -18,6 +19,8 @@ def get_lead(db: Session, lead_id: int) -> Optional[Lead]:
 
 def get_leads(
     db: Session, 
+    sort_by: str = "id",
+    sort_dir: str = "asc",
     skip: int = 0, 
     limit: int = 20, 
     search: Optional[str] = None,
@@ -49,7 +52,7 @@ def get_leads(
         query = query.where(Lead.contact_id == contact_id)
         
     total = db.scalar(select(func.count()).select_from(query.subquery())) or 0
-    items = list(db.scalars(query.offset(skip).limit(limit)).all())
+    items = list(db.scalars(sorted_query(query, Lead, sort_by, sort_dir).offset(skip).limit(limit)).all())
     return items, total
 
 def update_lead(db: Session, db_lead: Lead, lead_in: LeadUpdate) -> Lead:

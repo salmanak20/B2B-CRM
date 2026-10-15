@@ -1,0 +1,18 @@
+{
+  "scope": "Local loopback, isolated SQLite API, legacy test authentication, five concurrent readers, empty CRM dataset. Not production capacity or provider latency.",
+  "dashboard_ready_ms": 997,
+  "navigation": {
+    "ttfb_ms": 5.300000000745058,
+    "dom_content_loaded_ms": 139.09999999962747,
+    "transfer_bytes": 833
+  },
+  "api": {
+    "requests": 30,
+    "concurrency": 5,
+    "failures": 0,
+    "median_ms": 42,
+    "p95_ms": 46,
+    "elapsed_ms": 277,
+    "requests_per_second": 108.3
+  }
+}

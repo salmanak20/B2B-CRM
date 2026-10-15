@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from typing import Any, Optional
 from datetime import datetime
 from sqlalchemy.orm import Session
@@ -12,7 +12,15 @@ from app.models.task import Task
 from app.models.user import User
 from app.api.ownership import READ_ALL_CRM_ROLES
 
-router = APIRouter()
+def validate_report_range(start_date: Optional[datetime] = None, end_date: Optional[datetime] = None):
+    from datetime import timezone
+    if start_date and end_date:
+        a = start_date.replace(tzinfo=timezone.utc) if start_date.tzinfo is None else start_date
+        b = end_date.replace(tzinfo=timezone.utc) if end_date.tzinfo is None else end_date
+        if a > b:
+            raise HTTPException(422, "start_date must be before or equal to end_date")
+
+router = APIRouter(dependencies=[Depends(validate_report_range)])
 
 def apply_date_filter(query, model, start_date, end_date):
     if start_date:
@@ -137,31 +145,39 @@ def get_team_report(
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
 ) -> Any:
+    from sqlalchemy import and_
+
     if current_user.role.name not in READ_ALL_CRM_ROLES:
         return {"error": "Not enough permissions to view team report"}
-        
-    q = db.query(
-        User.id,
-        User.name,
-        func.count(Deal.id).label("deals_count"),
-        func.sum(Deal.value).label("deals_value")
-    ).outerjoin(Deal, Deal.owner_id == User.id)
-    
+
+    # Build the join condition — date filters go here (not in WHERE) so that
+    # users with zero deals in the period still appear in the result with 0 counts.
+    join_condition = Deal.owner_id == User.id
     if start_date:
-        q = q.filter(Deal.created_at >= start_date)
+        join_condition = and_(join_condition, Deal.created_at >= start_date)
     if end_date:
-        q = q.filter(Deal.created_at <= end_date)
-        
-    q = q.group_by(User.id, User.name)
+        join_condition = and_(join_condition, Deal.created_at <= end_date)
+
+    q = (
+        db.query(
+            User.id,
+            User.name,
+            func.count(Deal.id).label("deals_count"),
+            func.sum(Deal.value).label("deals_value"),
+        )
+        .outerjoin(Deal, join_condition)
+        .group_by(User.id, User.name)
+    )
     results = q.all()
-    
+
     return {
         "team_performance": [
             {
-                "user_id": r.id, 
-                "name": r.name, 
-                "deals_count": r.deals_count, 
-                "deals_value": float(r.deals_value or 0)
-            } for r in results
+                "user_id": r.id,
+                "name": r.name,
+                "deals_count": r.deals_count,
+                "deals_value": float(r.deals_value or 0),
+            }
+            for r in results
         ]
     }

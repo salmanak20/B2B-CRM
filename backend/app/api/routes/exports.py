@@ -17,20 +17,39 @@ from app.api.ownership import READ_ALL_CRM_ROLES
 router = APIRouter()
 
 def get_rbac_filter(query, model, current_user):
+    """
+    Apply ownership/assignment filter for non-privileged users.
+    For models with both owner_id and assigned_to_id (e.g. Task), a user
+    can see records they own *or* are assigned to.  Using `elif` would make the
+    assigned_to_id branch unreachable whenever owner_id exists, so we check
+    both attributes independently.
+    """
     if current_user.role.name not in READ_ALL_CRM_ROLES:
-        if hasattr(model, 'owner_id'):
-            return query.filter(model.owner_id == current_user.id)
-        elif hasattr(model, 'assigned_to_id'):
+        has_owner = hasattr(model, 'owner_id')
+        has_assignee = hasattr(model, 'assigned_to_id')
+        if has_owner and has_assignee:
             from sqlalchemy import or_
-            return query.filter(or_(model.owner_id == current_user.id, model.assigned_to_id == current_user.id))
+            return query.filter(
+                or_(model.owner_id == current_user.id,
+                    model.assigned_to_id == current_user.id)
+            )
+        elif has_owner:
+            return query.filter(model.owner_id == current_user.id)
+        elif has_assignee:
+            return query.filter(model.assigned_to_id == current_user.id)
     return query
+
+def safe_csv_cell(value):
+    if isinstance(value, str) and value.lstrip().startswith(("=", "+", "-", "@", "\t", "\r", "\n")):
+        return "'" + value
+    return value
 
 def generate_csv(data: list, fieldnames: list) -> StreamingResponse:
     output = io.StringIO()
     writer = csv.DictWriter(output, fieldnames=fieldnames)
     writer.writeheader()
     for row in data:
-        writer.writerow(row)
+        writer.writerow({key: safe_csv_cell(value) for key, value in row.items()})
     
     output.seek(0)
     return StreamingResponse(

@@ -37,6 +37,8 @@ def create_new_company(company_in: CompanyCreate, db: SessionDep, current_user: 
 def read_companies(
     db: SessionDep,
     current_user: CurrentActiveUser,
+    sort_by: str = "id",
+    sort_dir: str = Query("asc", pattern="^(asc|desc)$"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     search: Optional[str] = None,
@@ -50,7 +52,7 @@ def read_companies(
     if current_user.role.name not in {"admin", "administrator", "sales_manager", "viewer"}:
         scoped_owner_id = current_user.id
     items, total = get_companies(
-        db=db,
+        db=db, sort_by=sort_by, sort_dir=sort_dir,
         skip=skip,
         limit=page_size,
         search=search,
@@ -94,5 +96,10 @@ def delete_existing_company(company_id: int, db: SessionDep, current_user: Curre
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
     ensure_can_modify_crm_record(company.owner_id, current_user)
+    if any((company.contacts, company.leads, company.deals, company.tasks, company.activities)):
+        raise HTTPException(409, "Company has related records. Reassign or remove those records first.")
+    from app.api.routes.workspace import ensure_no_attachments
+    ensure_no_attachments(db,'companies',company_id)
     delete_company(db=db, db_company=company)
+    log_event(db,'Company Deleted',current_user.id,'Company',company_id,'Company removed')
     return {"ok": True}

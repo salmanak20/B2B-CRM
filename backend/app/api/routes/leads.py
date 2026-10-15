@@ -42,6 +42,8 @@ def create_new_lead(lead_in: LeadCreate, db: SessionDep, current_user: CurrentAc
     validate_lead_relationships(db, current_user, lead_in.company_id, lead_in.contact_id)
     owner_id = resolve_owner_id(db, current_user, lead_in.owner_id)
     lead = create_lead(db=db, lead_in=lead_in, owner_id=owner_id)
+    from app.api.routes.workspace import run_lead_workflows
+    run_lead_workflows(db,lead)
     log_event(db, action="Lead Created", user_id=current_user.id, entity="Lead", entity_id=lead.id, description=f"Created lead {lead.title}")
     return lead
 
@@ -49,6 +51,8 @@ def create_new_lead(lead_in: LeadCreate, db: SessionDep, current_user: CurrentAc
 def read_leads(
     db: SessionDep,
     current_user: CurrentActiveUser,
+    sort_by: str = "id",
+    sort_dir: str = Query("asc", pattern="^(asc|desc)$"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     search: Optional[str] = None,
@@ -65,7 +69,7 @@ def read_leads(
     if current_user.role.name not in {"admin", "administrator", "sales_manager", "viewer"}:
         scoped_owner_id = current_user.id
     items, total = get_leads(
-        db=db, skip=skip, limit=page_size, search=search,
+        db=db, sort_by=sort_by, sort_dir=sort_dir, skip=skip, limit=page_size, search=search,
         status=status, source=source, owner_id=scoped_owner_id, company_id=company_id, contact_id=contact_id
     )
     pages = (total + page_size - 1) // page_size if total > 0 else 0
@@ -92,7 +96,11 @@ def update_existing_lead(lead_id: int, lead_in: LeadUpdate, db: SessionDep, curr
     if lead_in.owner_id is not None:
         lead_in.owner_id = resolve_owner_id(db, current_user, lead_in.owner_id)
             
+    old_status=lead.status
     updated_lead = update_lead(db=db, db_lead=lead, lead_in=lead_in)
+    if old_status!=updated_lead.status:
+        from app.api.routes.workspace import run_lead_workflows
+        run_lead_workflows(db,updated_lead)
     log_event(db, action="Lead Updated", user_id=current_user.id, entity="Lead", entity_id=updated_lead.id, description=f"Updated lead {updated_lead.title}")
     return updated_lead
 
@@ -102,5 +110,10 @@ def delete_existing_lead(lead_id: int, db: SessionDep, current_user: CurrentActi
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
     ensure_can_modify_crm_record(lead.owner_id, current_user)
+    if any((lead.deals, lead.tasks, lead.activities)):
+        raise HTTPException(409, "Lead has related records. Reassign or remove those records first.")
+    from app.api.routes.workspace import ensure_no_attachments
+    ensure_no_attachments(db,'leads',lead_id)
     delete_lead(db=db, db_lead=lead)
+    log_event(db,'Lead Deleted',current_user.id,'Lead',lead_id,'Lead removed')
     return {"ok": True}

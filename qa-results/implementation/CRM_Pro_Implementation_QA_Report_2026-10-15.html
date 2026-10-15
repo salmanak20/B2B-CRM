@@ -1,0 +1,332 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CRM Pro implementation QA · 15 October 2026</title><style>body{margin:0;background:#f5f5fc;color:#20243b;font:15px/1.65 system-ui,sans-serif}main{max-width:1160px;margin:32px auto;padding:42px;background:white;border:1px solid #dcdcec;border-radius:16px}h1{font-size:30px;color:#4231c6;line-height:1.2}h2{font-size:22px;margin-top:38px;border-bottom:1px solid #ddddef;padding-bottom:8px}table{border-collapse:collapse;width:100%;font-size:13px;margin:20px 0}th{background:#ece9ff;text-align:left}td,th{border:1px solid #dddded;padding:10px;vertical-align:top}tr:nth-child(even){background:#fafaff}code{background:#f0eff8;padding:2px 4px;border-radius:4px;font-size:.9em;overflow-wrap:anywhere}a{color:#4936c8}li{margin:8px 0}strong{color:#292257}@media(max-width:700px){main{margin:0;padding:20px;border-radius:0}table{display:block;overflow:auto}h1{font-size:25px}}@media print{body{background:white}main{border:0;margin:0;padding:0}h2{break-after:avoid}tr{break-inside:avoid}a{color:inherit}}</style></head><body><main><h1>CRM Pro — implementation and QA report</h1>
+<p><strong>Date:</strong> 15 October 2026 · <strong>Workspace:</strong> <code>S:\Projects\CRM</code><br />
+<strong>Release verdict: production sign-off blocked.</strong> The implementation and isolated regression tests pass. Database protection is applied live. The updated app has not been published to Vercel, and real provider invitation/recovery and Storage remain unverified.</p>
+<h2>What was delivered</h2>
+<p>The existing Vite page structure and FastAPI/SQLAlchemy/Alembic backend were extended. The indigo/Inter sidebar and card design are retained, with bundled fonts, responsive layouts and real forms. Shipped fictional CRM records, personalized login text, demonstration dashboard values, sample notifications and the static workflow builder were removed. Browser storage is no longer the source of CRM data or auth tokens.</p>
+<p>Real operations now cover companies, contacts, leads/conversion, deals/pipelines/stages, tasks/calendar, activities/notes, notifications, workflow rules, profiles/workspace settings, user administration, CSV import/export and database-derived analytics. Supabase Auth, encrypted server sessions and private Storage adapters are implemented. Cloud-dependent controls expose an explicit configuration error/disabled state when unavailable.</p>
+<h2>Test results</h2>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Result</th>
+<th>Evidence and scope</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Backend integration — SQLite</td>
+<td>99 passed</td>
+<td>Fresh isolated in-memory test database; API validation, CRUD, relationships, role/owner isolation, sessions, imports, conversion, workflows, audits and provider contracts</td>
+</tr>
+<tr>
+<td>Backend integration — PostgreSQL 18</td>
+<td>99 passed in 85.46s (0:01:25)</td>
+<td>Random-password localhost cluster; no production fixtures</td>
+</tr>
+<tr>
+<td>Database migrations</td>
+<td>Passed</td>
+<td>Fresh upgrade, downgrade to base and reapply; offline SQL generation also verified</td>
+</tr>
+<tr>
+<td>Functional browser regression</td>
+<td>113 passed, 0 failed, 3 skipped, 0 flaky</td>
+<td>29 scenarios across Chromium, Firefox, WebKit and mobile Chromium; three duplicate Chromium width sweeps intentionally skipped in other engines</td>
+</tr>
+<tr>
+<td>Automated accessibility</td>
+<td>Passed in four browser projects</td>
+<td>13 routes, WCAG 2/2.1 A/AA tags, no serious/critical axe findings; dialog focus/Escape and browser error checks</td>
+</tr>
+<tr>
+<td>Responsive layout</td>
+<td>Passed</td>
+<td>50 route/width combinations and dialog bounds at 1440, 1024, 768, 375, 430 pixels; actual horizontal tables may scroll inside their table container</td>
+</tr>
+<tr>
+<td>Production frontend build</td>
+<td>Passed</td>
+<td>Vite dist generated; shipped assets scanned for known demo data, hardcoded login identity, mock tokens and runtime Tailwind CDN</td>
+</tr>
+<tr>
+<td>Dependency scans</td>
+<td>Zero known advisories</td>
+<td>npm audit; Python pip-audit across 71 installed packages after patching JWT/pip</td>
+</tr>
+<tr>
+<td>Local API availability</td>
+<td>Passed</td>
+<td>Health 200, DB readiness 200, unauthenticated auth/me 401 on restarted localhost:8000</td>
+</tr>
+<tr>
+<td>Live anonymous database access</td>
+<td>Fixed and verified</td>
+<td>users/companies HEAD returned 200 before migration and 401 afterward; all 22 public application/migration tables use RLS with direct anon/authenticated table grants revoked</td>
+</tr>
+<tr>
+<td>Real Auth email and cloud Storage</td>
+<td>Blocked</td>
+<td>Integration code and isolated contract tests pass; no live email/Storage claim</td>
+</tr>
+<tr>
+<td>Vercel hosted deployment</td>
+<td>Blocked</td>
+<td>Existing project is listed but access returns scope-specific 403; CLI has no credentials</td>
+</tr>
+</tbody>
+</table>
+<p>The first complete browser run exposed the shared badge accessible-name issue, Safari focus return and a sign-out redirect race. These were fixed and the complete functional suite rerun successfully. A later mobile task test exposed a test synchronization error: it filled an inert search field before the save dialog closed; the test now waits for dismissal while retaining its persistence assertions. Earlier failed-run JSON is retained alongside final evidence for traceability.</p>
+<h2>Functional coverage</h2>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Verified behavior</th>
+<th>Production qualification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Login/session</td>
+<td>Required fields, password visibility, wrong-password feedback, dashboard redirects, session refresh/expiry, Remember Me, logout revocation, no browser token persistence</td>
+<td>Browser regression uses development-only accounts in an isolated test API. Supabase login/recovery/password integration is contract-tested; real provider delivery/sign-in is pending</td>
+</tr>
+<tr>
+<td>Accounts/access</td>
+<td>Administrator create/deactivate, safe role controls, viewer mutation denial, representative owner/assignment scope, audit events, preserving existing user IDs when linking provider identities</td>
+<td>No requested administrator exists yet; invitation needs configured privileged key</td>
+</tr>
+<tr>
+<td>Companies/contacts</td>
+<td>Create/edit/delete, linked company identity, detail/history/notes, safe dependent-record deletion, persistence after refresh/logout/login</td>
+<td>Live business records preserved</td>
+</tr>
+<tr>
+<td>Leads</td>
+<td>Create/update/status/search/sort/page, stored relationships, idempotent company/contact/deal conversion, workflow triggers</td>
+<td>No duplicate conversion on repeat requests</td>
+</tr>
+<tr>
+<td>Deals/pipelines</td>
+<td>User-created pipeline/stages, create/edit, stage movement, won/lost/open status, values, closing timestamp</td>
+<td>Historical unknown close dates are not fabricated</td>
+</tr>
+<tr>
+<td>Tasks/calendar</td>
+<td>Assignment, status/completion, edit/delete, owner-or-assignee search, actual deadlines and month navigation</td>
+<td>In-app due notifications are delivered on notification fetch on serverless, not by a guaranteed background scheduler</td>
+</tr>
+<tr>
+<td>Notifications</td>
+<td>Actual assignment/due rows, read/delete/mark all, due-event deduplication, unread badge</td>
+<td>Current notification overview is bounded to 100 recent rows; no email-notification delivery claim</td>
+</tr>
+<tr>
+<td>Workflows</td>
+<td>Stored lead-status/minimum-value rule, enabled state, real assigned task + notification, one execution per rule/lead</td>
+<td>Focused CRM automation; no arbitrary drag-and-drop workflow language or external campaign engine</td>
+</tr>
+<tr>
+<td>Imports/exports</td>
+<td>CSV selection, mapping/preview, per-row validation, duplicate skip/update, partial valid-row commit, error counts, ownership protection, CSV formula neutralization</td>
+<td>UTF-8 CSV only; 2 MB/1000 rows per import; no spreadsheet workbook import</td>
+</tr>
+<tr>
+<td>Analytics/reports</td>
+<td>Real counts/amounts, empty/zero states, UTC range checks, closing-date revenue trend, team data, actual CSV records</td>
+<td>USD workspace; record counts use creation date, won revenue uses actual closing date</td>
+</tr>
+<tr>
+<td>Settings</td>
+<td>Real profile/name, compact preference, display timezone, administrator workspace settings</td>
+<td>Provider configuration/SMTP are deployment operations; no fake weekly digest toggle</td>
+</tr>
+<tr>
+<td>Attachments</td>
+<td>Server size/type/content checks, related-record access, private object path, 60-second signed URL, deletion integrity</td>
+<td>Contract-tested; real cloud bucket/key setup and upload/download verification pending</td>
+</tr>
+</tbody>
+</table>
+<h2>Live database work and data integrity</h2>
+<p>The configured connection matches existing Supabase project <code>hazrihbiqsflnmlcycen</code>. Migration revision advanced from <code>0aa836556f2a</code> to <code>f8b3015a0001</code>. Before migration, an encrypted custom-format public-schema backup was saved under ignored <code>backend/.backups</code> and its archive listing verified. Counts of all 14 original application tables were unchanged after migration. No business data, test accounts or fictional records were inserted into production.</p>
+<p>The security review independently confirmed anonymous table access before remediation. RLS and privilege revocation now prevent direct browser access, while FastAPI continues using its trusted PostgreSQL role and enforces authorization. Supabase's remaining informational <strong>RLS Enabled No Policy</strong> notices describe intentional default-deny browser access; broad read policies must not be added to suppress them. <a href="https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy">Supabase explanation</a>.</p>
+<p>The backup protects public application tables. Supabase-managed Auth/Storage have separate backup requirements. Archive listing verification is not a full restore rehearsal. Keep the original session encryption secret with protected recovery material. Prefer application rollback with the additive schema retained; production downgrade would discard new feature data.</p>
+<p>The deployment remains a single workspace. Organizations/memberships and cross-organization tenancy were not added to a product without an organization-switching feature. Workspaces requiring independent tenant isolation need separate deployments/databases until an explicit tenant migration is designed. Notes are stored as actual note activities, and organization settings as the workspace settings row.</p>
+<h2>Local performance baseline</h2>
+<p>One additional Chromium performance test passed. Dashboard readiness, including the network-idle wait, was <strong>997 ms</strong>. Navigation TTFB was <strong>5.3 ms</strong>. Thirty paged API reads with five concurrent readers had <strong>0 failures</strong>, <strong>42 ms median</strong> and <strong>46 ms p95</strong>.</p>
+<p>This is a local loopback, empty-dataset, development-authentication baseline using SQLite. It does not establish hosted capacity, cold-start latency, mobile-network performance, large-dataset performance, real Supabase Auth latency or an availability SLA. No production stress test was performed.</p>
+<h2>Disposition of the original 23 defect groups</h2>
+<p>“Fixed locally” means implemented and verified in the stated isolated scope, not a claim that the old public Vercel deployment contains the fix.</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Original severity</th>
+<th>Original issue</th>
+<th>Current disposition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>QA-001</td>
+<td>High</td>
+<td>Analytics show demonstration figures and cannot render actual API reports</td>
+<td>Fixed locally: actual analytics contracts, close-based revenue and empty states; browser/API tests.</td>
+</tr>
+<tr>
+<td>QA-002</td>
+<td>High</td>
+<td>Deal creation is unreachable and editing silently ignores the selected stage</td>
+<td>Fixed locally: create/edit uses actual pipeline/stage IDs; won/lost state and close time persist.</td>
+</tr>
+<tr>
+<td>QA-003</td>
+<td>High</td>
+<td>Lead company and contact fields are discarded on save</td>
+<td>Fixed locally: stored company/contact IDs survive save and conversion.</td>
+</tr>
+<tr>
+<td>QA-004</td>
+<td>Medium</td>
+<td>Relationship names do not match API response fields</td>
+<td>Fixed locally: API DTOs include real company/contact/assignee names.</td>
+</tr>
+<tr>
+<td>QA-005</td>
+<td>High</td>
+<td>Customer and deal details retain unrelated placeholder content</td>
+<td>Fixed locally: profiles, related records, notes/history and attachment states use real APIs.</td>
+</tr>
+<tr>
+<td>QA-006</td>
+<td>High</td>
+<td>Pagination does not advance and list counts are fabricated</td>
+<td>Fixed locally: server totals, sorting and working record pagination; &gt;10-record regression test.</td>
+</tr>
+<tr>
+<td>QA-007</td>
+<td>High</td>
+<td>Workflow automation is a nonpersistent interface</td>
+<td>Fixed locally: persisted status/value rules create one task per rule/lead, with notifications.</td>
+</tr>
+<tr>
+<td>QA-008</td>
+<td>High</td>
+<td>Assignments generate no notifications and notification page shows sample records</td>
+<td>Fixed locally: actual assignment/due events, read/delete/mark-all actions; no sample cards.</td>
+</tr>
+<tr>
+<td>QA-009</td>
+<td>High</td>
+<td>Administrator user creation is unavailable in the interface</td>
+<td>Development CRUD and production invitation integration implemented. Live invitations blocked by service-key/provider setup.</td>
+</tr>
+<tr>
+<td>QA-010</td>
+<td>Medium</td>
+<td>Profile and preferences do not save</td>
+<td>Fixed locally: profile/workspace updates persist; timezone affects displayed timestamps.</td>
+</tr>
+<tr>
+<td>QA-011</td>
+<td>High</td>
+<td>CSV exports preserve executable spreadsheet formulas</td>
+<td>Fixed: formula-leading CSV cells are neutralized; exports retain real permitted records.</td>
+</tr>
+<tr>
+<td>QA-012</td>
+<td>High</td>
+<td>Password validation accepts weak values and returns 500 for long values</td>
+<td>Fixed locally: 12-character/72-byte creation/change boundaries and safe validation errors. Provider password settings still need verification.</td>
+</tr>
+<tr>
+<td>QA-013</td>
+<td>High</td>
+<td>Profile and administrator user edits omit audit events</td>
+<td>Fixed locally: profile/account changes, important CRM operations, imports and deletion emit audit events.</td>
+</tr>
+<tr>
+<td>QA-014</td>
+<td>High</td>
+<td>Accessibility defects affect controls images contrast and modal keyboard use</td>
+<td>Automated regression passes: 13 routes per engine, serious/critical axe checks, dialog keyboard/focus. Manual assistive-technology certification not performed.</td>
+</tr>
+<tr>
+<td>QA-015</td>
+<td>Medium</td>
+<td>Several pages overflow mobile and tablet viewports</td>
+<td>Fixed in tested widths: 50 route/viewport checks plus forms at 1440/1024/768/375/430.</td>
+</tr>
+<tr>
+<td>QA-016</td>
+<td>Medium</td>
+<td>Global search omits tasks assigned to the current representative</td>
+<td>Fixed: search includes owned OR assigned tasks and actual contact names.</td>
+</tr>
+<tr>
+<td>QA-017</td>
+<td>Medium</td>
+<td>Role affordances disagree with backend permissions</td>
+<td>Fixed locally: role-aware navigation/forms plus server permission/ownership checks; negative API/browser tests.</td>
+</tr>
+<tr>
+<td>QA-018</td>
+<td>Medium</td>
+<td>Activity creation has no usable entry point</td>
+<td>Fixed locally: Log Activity creates a real stored call/email/meeting/note/follow-up entry.</td>
+</tr>
+<tr>
+<td>QA-019</td>
+<td>Medium</td>
+<td>Validation accepts meaningless names and reversed report date ranges</td>
+<td>Fixed locally: trimmed nonempty names, finite numbers and valid date ranges are enforced.</td>
+</tr>
+<tr>
+<td>QA-020</td>
+<td>High</td>
+<td>Installed frontend tooling has reported dependency advisories</td>
+<td>Fixed at scan time: Vite upgraded, JWT/pip patched; npm and Python scans report zero known advisories.</td>
+</tr>
+<tr>
+<td>QA-021</td>
+<td>Medium</td>
+<td>Build command does not produce the output required by preview</td>
+<td>Fixed: Vite creates dist output and shipped-asset scan passes. Hosted build blocked by Vercel access.</td>
+</tr>
+<tr>
+<td>QA-022</td>
+<td>Medium</td>
+<td>Calendar Automations and Reports sidebar entries are dead links</td>
+<td>Fixed locally: calendar, automation and report routes load actual data and support navigation.</td>
+</tr>
+<tr>
+<td>QA-023</td>
+<td>Medium</td>
+<td>Company table headings describe different data from the rendered cells</td>
+<td>Fixed locally: company table headings and values match.</td>
+</tr>
+</tbody>
+</table>
+<h2>Open release blockers and limits</h2>
+<ol>
+<li><strong>High — Vercel project access.</strong> <code>b2-b-crm</code> is visible, but the connector returns 403 for scope <code>salman-yousafzais-projects</code>. CLI fallback has no authenticated credentials. No new build/deployment ID was created. The existing public URL is not evidence that this implementation is deployed.</li>
+<li><strong>High — administrator/Auth setup.</strong> <code>salmanyousafzai736@gmail.com</code> is absent from CRM and Supabase Auth. Configure server-only <code>SUPABASE_SERVICE_ROLE_KEY</code>, Auth URLs, the token-hash Invite/Recovery email templates and reliable email delivery; then invite this administrator and verify the real inbox flow. No password is hardcoded and no password bypass was introduced.</li>
+<li><strong>High — private Storage.</strong> Create/configure the private <code>crm-attachments</code> bucket and privileged server access, then verify actual upload/download and access denial in staging. Uploads currently explain that Storage is not configured.</li>
+<li><strong>Release verification pending.</strong> Protected preview build, clean-route refreshes, hosted CSP/secure cookies, actual provider refresh/revocation, production logs and cloud performance must be verified before promotion. Vercel CLI detected the frontend/backend service configuration locally, but a Windows path-with-spaces quoting error in its uv launcher prevented a complete local Vercel runtime check.</li>
+<li><strong>Explicit limits.</strong> User/audit and related overview panels are bounded to recent records; sales record lists have tested server pagination. Automated accessibility does not replace manual screen-reader/assistive-device review. Serverless reminder delivery occurs when notifications are fetched. Multi-currency accounting, multitenancy, SSO and email campaigns are not available product features.</li>
+</ol>
+<p>Full environment variables, administrator bootstrap commands, provider email templates, migration/rollback guidance and release order are in <a href="../../PRODUCTION_SETUP.md">PRODUCTION_SETUP.md</a>. No production-ready sign-off is issued while these blockers remain.</p>
+<h2>Evidence files</h2>
+<ul>
+<li><a href="browser-final-functional.json">Final functional browser JSON</a></li>
+<li><a href="backend-sqlite-tests.log">SQLite backend test log</a> and <a href="postgres-tests.log">PostgreSQL test log</a></li>
+<li><a href="postgres-verification.json">PostgreSQL verification</a> and <a href="postgres-migration.log">migration log</a></li>
+<li><a href="security-live-before.json">Anonymous access before</a> / <a href="security-live-after.json">after</a></li>
+<li><a href="local-performance.json">Local performance measurements</a></li>
+<li><a href="python-dependency-audit.json">Python dependency audit</a> / <a href="npm-audit.json">npm audit</a></li>
+<li><a href="dashboard-1440.png">Desktop dashboard screenshot</a> / <a href="dashboard-375.png">phone dashboard screenshot</a></li>
+</ul>
+<p>Screenshots display explicitly isolated synthetic QA fixtures. They do not represent production customers or seed data shipped to new accounts.</p>
+</main></body></html>

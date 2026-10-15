@@ -2,12 +2,14 @@ import pytest
 
 def get_token(client, email, password):
     response = client.post("/api/v1/auth/login", data={"username": email, "password": password})
-    return response.json()["access_token"]
+    token=response.json()["access_token"]
+    client.cookies.clear()
+    return token
 
 def test_users_me(client):
     # Register and login
-    client.post("/api/v1/auth/register", json={"name": "Me", "email": "me@example.com", "password": "pass"})
-    token = get_token(client, "me@example.com", "pass")
+    client.post("/api/v1/auth/register", json={"name": "Me", "email": "me@example.com", "password": "ValidPassword123!"})
+    token = get_token(client, "me@example.com", "ValidPassword123!")
     
     response = client.get("/api/v1/users/me", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
@@ -25,8 +27,8 @@ def test_admin_get_users(client):
     assert len(response.json()) >= 1
 
 def test_non_admin_get_users(client):
-    client.post("/api/v1/auth/register", json={"name": "Non Admin", "email": "nonadmin@example.com", "password": "pass"})
-    token = get_token(client, "nonadmin@example.com", "pass")
+    client.post("/api/v1/auth/register", json={"name": "Non Admin", "email": "nonadmin@example.com", "password": "ValidPassword123!"})
+    token = get_token(client, "nonadmin@example.com", "ValidPassword123!")
     
     response = client.get("/api/v1/users", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 403

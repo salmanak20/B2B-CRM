@@ -1,3 +1,4 @@
+from app.crud.sorting import sorted_query
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func, or_
 from app.models.company import Company
@@ -17,6 +18,8 @@ def get_company(db: Session, company_id: int) -> Optional[Company]:
 
 def get_companies(
     db: Session, 
+    sort_by: str = "id",
+    sort_dir: str = "asc",
     skip: int = 0, 
     limit: int = 20, 
     search: Optional[str] = None,
@@ -40,7 +43,7 @@ def get_companies(
     if industry is not None:
         query = query.where(Company.industry == industry)
     total = db.scalar(select(func.count()).select_from(query.subquery())) or 0
-    items = list(db.scalars(query.offset(skip).limit(limit)).all())
+    items = list(db.scalars(sorted_query(query, Company, sort_by, sort_dir).offset(skip).limit(limit)).all())
     return items, total
 
 def get_company_by_owner_and_name(db: Session, owner_id: int, name: str) -> Optional[Company]:

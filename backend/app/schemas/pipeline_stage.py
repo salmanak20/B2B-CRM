@@ -1,3 +1,4 @@
+from pydantic import ConfigDict
 from datetime import datetime
 from typing import Optional
 
@@ -7,6 +8,7 @@ from app.schemas.pagination import PaginatedResponse
 
 
 class PipelineStageBase(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, allow_inf_nan=False, extra="forbid")
     name: str = Field(..., min_length=1, max_length=100)
     order: int = Field(..., ge=1)
     probability: int = Field(0, ge=0, le=100)
@@ -28,6 +30,7 @@ class PipelineStageCreate(PipelineStageBase):
 
 
 class PipelineStageUpdate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, allow_inf_nan=False, extra="forbid")
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     order: Optional[int] = Field(None, ge=1)
     probability: Optional[int] = Field(None, ge=0, le=100)

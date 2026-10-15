@@ -9,10 +9,16 @@ engine_kwargs: dict = {
     "echo": settings.DEBUG,
 }
 
-if "localhost" not in settings.DATABASE_URL and "127.0.0.1" not in settings.DATABASE_URL:
+if settings.DATABASE_URL.startswith("postgresql") and "localhost" not in settings.DATABASE_URL and "127.0.0.1" not in settings.DATABASE_URL:
     engine_kwargs["connect_args"] = {"sslmode": "require"}
 
 engine = create_engine(settings.DATABASE_URL, **engine_kwargs)
+
+if settings.DATABASE_URL.startswith("sqlite"):
+    from sqlalchemy import event
+    @event.listens_for(engine,"connect")
+    def sqlite_integrity(connection,record):
+        connection.execute("PRAGMA foreign_keys=ON")
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

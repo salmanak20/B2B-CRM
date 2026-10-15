@@ -82,6 +82,8 @@ def create_new_task(task_in: TaskCreate, db: SessionDep, current_user: CurrentAc
     owner_id = resolve_owner_id(db, current_user, task_in.owner_id)
     assigned_to_id = resolve_assigned_to_id(db, current_user, task_in.assigned_to_id)
     task = create_task(db, task_in, owner_id, assigned_to_id)
+    from app.api.routes.workspace import notify_assignment
+    notify_assignment(db,task)
     log_event(db, action="Task Created", user_id=current_user.id, entity="Task", entity_id=task.id, description=f"Created task {task.title}")
     return task
 
@@ -159,7 +161,11 @@ def update_existing_task(task_id: int, task_in: TaskUpdate, db: SessionDep, curr
         task_in.owner_id = resolve_owner_id(db, current_user, task_in.owner_id)
     if "assigned_to_id" in task_in.model_fields_set:
         task_in.assigned_to_id = resolve_assigned_to_id(db, current_user, task_in.assigned_to_id)
+    previous_assignee=task.assigned_to_id
     updated_task = update_task(db, task, task_in)
+    if previous_assignee!=updated_task.assigned_to_id:
+        from app.api.routes.workspace import notify_assignment
+        notify_assignment(db,updated_task)
     log_event(db, action="Task Updated", user_id=current_user.id, entity="Task", entity_id=updated_task.id, description=f"Updated task {updated_task.title}")
     return updated_task
 
@@ -185,7 +191,11 @@ def patch_task_assignee(task_id: int, assignee_in: TaskAssigneeUpdate, db: Sessi
         raise HTTPException(status_code=404, detail="Task not found")
     ensure_can_modify_task(task, current_user)
     assigned_to_id = resolve_assigned_to_id(db, current_user, assignee_in.assigned_to_id)
+    previous_assignee=task.assigned_to_id
     updated_task = update_task_assignee(db, task, assigned_to_id)
+    if previous_assignee!=assigned_to_id:
+        from app.api.routes.workspace import notify_assignment
+        notify_assignment(db,updated_task)
     log_event(db, action="Task Assigned", user_id=current_user.id, entity="Task", entity_id=updated_task.id, description=f"Task {updated_task.title} assigned to user {assigned_to_id}")
     return updated_task
 
@@ -196,5 +206,8 @@ def delete_existing_task(task_id: int, db: SessionDep, current_user: CurrentActi
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     ensure_can_modify_task(task, current_user)
+    from app.api.routes.workspace import ensure_no_attachments
+    ensure_no_attachments(db,'tasks',task_id)
     delete_task(db, task)
+    log_event(db,'Task Deleted',current_user.id,'Task',task_id,'Task removed')
     return {"ok": True}

@@ -1,3 +1,4 @@
+from pydantic import ConfigDict
 from datetime import datetime
 from typing import List, Optional
 
@@ -9,6 +10,7 @@ from app.schemas.pipeline_stage import PipelineStageResponse
 
 
 class PipelineBase(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, allow_inf_nan=False, extra="forbid")
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
     is_default: bool = False
@@ -20,6 +22,7 @@ class PipelineCreate(PipelineBase):
 
 
 class PipelineUpdate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, allow_inf_nan=False, extra="forbid")
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
     is_default: Optional[bool] = None

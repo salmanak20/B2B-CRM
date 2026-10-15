@@ -85,6 +85,8 @@ def create_new_deal(deal_in: DealCreate, db: SessionDep, current_user: CurrentAc
 def read_deals(
     db: SessionDep,
     current_user: CurrentActiveUser,
+    sort_by: str = "id",
+    sort_dir: str = Query("asc", pattern="^(asc|desc)$"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     search: Optional[str] = None,
@@ -103,7 +105,7 @@ def read_deals(
     if current_user.role.name not in {"admin", "administrator", "sales_manager", "viewer"}:
         scoped_owner_id = current_user.id
     items, total = get_deals(
-        db,
+        db, sort_by=sort_by, sort_dir=sort_dir,
         skip=skip,
         limit=page_size,
         search=search,
@@ -226,5 +228,10 @@ def delete_existing_deal(deal_id: int, db: SessionDep, current_user: CurrentActi
     if not deal:
         raise HTTPException(status_code=404, detail="Deal not found")
     ensure_can_modify_crm_record(deal.owner_id, current_user)
+    from app.api.routes.workspace import ensure_no_attachments
+    ensure_no_attachments(db,'deals',deal_id)
+    if deal.tasks or deal.activities:
+        raise HTTPException(409,'Deal has related tasks or activities. Reassign or remove them first.')
     delete_deal(db, deal)
+    log_event(db,'Deal Deleted',current_user.id,'Deal',deal_id,'Deal removed')
     return {"ok": True}

@@ -1,129 +1,21 @@
-import { apiGet } from './api.js';
-import { initApp } from './app.js';
-import { isManagerOrAdmin } from './rbac.js';
-
-document.addEventListener('DOMContentLoaded', async () => {
-  await initApp();
-
-  if (!isManagerOrAdmin()) {
-    alert('Access denied. Administrator or Sales Manager role required.');
-    window.location.href = '../analytics_reports_crm_pro/code.html';
-    return;
-  }
-
-  await Promise.all([loadUsers(), loadRoles(), loadAuditLogs()]);
-});
-
-async function loadUsers() {
-  const tableBody = document.querySelector('#users-table tbody') || document.querySelectorAll('tbody')[0];
-  if (!tableBody) return;
-
-  tableBody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-body-md text-on-surface-variant">Loading users...</td></tr>`;
-
-  try {
-    const users = await apiGet('/users');
-    const list = Array.isArray(users) ? users : (users.items || []);
-
-    if (list.length === 0) {
-      tableBody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-body-md text-on-surface-variant">No users found</td></tr>`;
-      return;
-    }
-
-    tableBody.innerHTML = list.map(u => `
-      <tr class="hover:bg-surface-variant/20 transition-colors">
-        <td class="py-3 px-4 font-semibold text-on-surface">${escapeHtml(u.full_name || u.email)}</td>
-        <td class="py-3 px-4 text-on-surface-variant">${escapeHtml(u.email)}</td>
-        <td class="py-3 px-4">
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-container/20 text-primary">
-            ${escapeHtml(u.role ? u.role.name : 'Viewer')}
-          </span>
-        </td>
-        <td class="py-3 px-4">
-          <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${u.is_active ? 'bg-secondary-container/20 text-secondary' : 'bg-error-container text-on-error-container'}">
-            ${u.is_active ? 'Active' : 'Inactive'}
-          </span>
-        </td>
-        <td class="py-3 px-4 text-right text-body-sm text-outline">
-          ${u.created_at ? new Date(u.created_at).toLocaleDateString() : ''}
-        </td>
-      </tr>
-    `).join('');
-
-  } catch (err) {
-    tableBody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-body-md text-error">${err.message || 'Failed to load users'}</td></tr>`;
-  }
+import {initApp} from './app.js';
+import {apiGet,apiPost,apiPut} from './api.js';
+import {isAdmin,getRoleDisplayName} from './rbac.js';
+import {esc,heading,button,field,modal,table,empty,showError,toast,badge,date} from './ui.js';
+async function start(){const user=await initApp('User Management');if(!user)return;const main=document.querySelector('main');if(!isAdmin()){showError(main,new Error('Administrator access is required.'));return;}
+  let roles,auth;try{[roles,auth]=await Promise.all([apiGet('/roles'),apiGet('/auth/config')]);}catch(error){showError(main,error);return;}
+  async function load(){try{const [users,logs]=await Promise.all([apiGet('/users',{limit:100}),apiGet('/audit-logs/',{limit:100})]);main.innerHTML=heading('User Management','Manage real workspace accounts and review important changes.',button(auth.provider==='supabase'?'Invite User':'Add User','create',true))+`<section class="card">${table(['Name','Email','Role','Status','Actions'],users.map(u=>`<tr><td>${esc(u.name)}</td><td>${esc(u.email)}</td><td>${esc(getRoleDisplayName(u.role.name))}</td><td>${badge(u.is_active?'active':'inactive')}</td><td><button data-user-edit="${u.id}">Edit user</button></td></tr>`))}<p class="subtle card-body">Showing up to 100 accounts.</p></section><section class="card card-body section-gap"><h2>Audit log</h2>${logs.length?table(['Time','Actor','Action','Entity','Description'],logs.map(l=>`<tr><td>${date(l.timestamp)}</td><td>${esc(users.find(u=>u.id===l.user_id)?.name||'User #'+l.user_id)}</td><td>${esc(l.action)}</td><td>${esc(l.entity||'—')}</td><td>${esc(l.description||'—')}</td></tr>`)):empty('No audit entries','Important account and CRM changes appear here.')}</section>`;
+    main.querySelector('[data-action=create]').onclick=()=>modal({id:'user-modal',title:auth.provider==='supabase'?'Invite User':'Add User',save:auth.provider==='supabase'?'Send Invitation':'Create User',body:field('name','Full Name','text','',{required:true})+field('email','Email','email','',{required:true})+field('role_id','Role','select',roles.find(r=>r.name==='sales_rep')?.id||'',{required:true,choices:roles.map(r=>[r.id,getRoleDisplayName(r.name)])})+(auth.provider==='legacy'?field('password','Initial Password','password','',{required:true,help:'Development only. At least 12 characters.',autocomplete:'new-password'}):'<p class="subtle">The identity provider will email a secure account setup link.</p>'),onSave:async values=>{await apiPost('/users',{...values,role_id:Number(values.role_id)});toast('User account created.');await load();}});
+    main.querySelectorAll('[data-user-edit]').forEach(b=>b.onclick=()=>{const u=users.find(u=>u.id===Number(b.dataset.userEdit));modal({id:'user-modal',title:'Edit User',save:'Save User',body:field('name','Full Name','text',u.name,{required:true})+field('role_id','Role','select',u.role.id,{required:true,choices:roles.map(r=>[r.id,getRoleDisplayName(r.name)])})+field('is_active','Status','select',String(u.is_active),{choices:[['true','Active'],['false','Inactive']]}),onSave:async values=>{await apiPut('/users/'+u.id,{name:values.name,role_id:Number(values.role_id),is_active:values.is_active==='true'});toast('User access saved.');await load();}});});
+    if(auth.provider==='supabase')main.querySelectorAll('[data-user-edit]').forEach(edit=>{
+      const account=users.find(u=>u.id===Number(edit.dataset.userEdit));
+      if(account.auth_linked||!account.is_active)return;
+      const invite=document.createElement('button');invite.textContent='Set up sign-in';edit.before(invite);
+      invite.onclick=()=>modal({id:'identity-modal',title:'Set up existing account',save:'Set up sign-in',
+        body:`<p class="subtle">Send a setup invitation to ${esc(account.email)}, preserving this account’s role and customer ownership. If a verified Supabase Auth account already exists for this email, enter its user ID instead.</p>`+field('auth_user_id','Existing verified Auth user ID (optional)'),
+        onSave:async values=>{await apiPost(`/users/${account.id}/invite`,values.auth_user_id?values:{});toast('Sign-in setup completed.');await load();}});
+    });
+  }catch(error){showError(main,error);}}
+  await load();
 }
-
-async function loadRoles() {
-  const container = document.querySelector('#roles-list') || document.querySelector('[data-section="roles"]');
-  if (!container) return;
-
-  try {
-    const roles = await apiGet('/roles');
-    const list = Array.isArray(roles) ? roles : (roles.items || []);
-
-    container.innerHTML = `
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        ${list.map(r => `
-          <div class="p-4 rounded-xl border border-outline-variant/30 bg-surface/80">
-            <div class="font-headline-md font-bold text-on-surface mb-1">${escapeHtml(r.name)}</div>
-            <div class="font-body-sm text-on-surface-variant">${escapeHtml(r.description || 'No description')}</div>
-          </div>
-        `).join('')}
-      </div>
-    `;
-  } catch (err) {
-    container.innerHTML = `<div class="p-4 text-center text-error">${err.message}</div>`;
-  }
-}
-
-async function loadAuditLogs() {
-  const tableBody = document.querySelector('#audit-logs-table tbody') || document.querySelectorAll('tbody')[1];
-  if (!tableBody) return;
-
-  tableBody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-body-md text-on-surface-variant">Loading audit logs...</td></tr>`;
-
-  try {
-    const logs = await apiGet('/audit-logs', { limit: 50 });
-    const list = Array.isArray(logs) ? logs : (logs.items || []);
-
-    if (list.length === 0) {
-      tableBody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-body-md text-on-surface-variant">No audit logs found</td></tr>`;
-      return;
-    }
-
-    tableBody.innerHTML = list.map(l => `
-      <tr class="hover:bg-surface-variant/20 transition-colors">
-        <td class="py-3 px-4 font-semibold text-on-surface">${escapeHtml(l.user ? l.user.full_name : (l.user_id ? `User #${l.user_id}` : 'System'))}</td>
-        <td class="py-3 px-4">
-          <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold uppercase ${getActionBadgeClass(l.action)}">
-            ${escapeHtml(l.action)}
-          </span>
-        </td>
-        <td class="py-3 px-4 text-on-surface-variant font-semibold">${escapeHtml(l.entity || 'N/A')}</td>
-        <td class="py-3 px-4 text-on-surface-variant">#${l.entity_id || 'N/A'}</td>
-        <td class="py-3 px-4 text-on-surface-variant max-w-xs truncate">${escapeHtml(l.description || '')}</td>
-        <td class="py-3 px-4 text-right text-body-sm text-outline">
-          ${l.created_at ? new Date(l.created_at).toLocaleString() : ''}
-        </td>
-      </tr>
-    `).join('');
-
-  } catch (err) {
-    tableBody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-body-md text-error">${err.message || 'Failed to load audit logs'}</td></tr>`;
-  }
-}
-
-function getActionBadgeClass(action) {
-  switch ((action || '').toLowerCase()) {
-    case 'create': return 'bg-secondary-container/20 text-secondary';
-    case 'update': return 'bg-primary-container/20 text-primary';
-    case 'delete': return 'bg-error-container text-on-error-container';
-    default: return 'bg-surface-variant text-on-surface-variant';
-  }
-}
-
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
+start().catch(error=>showError(document.querySelector('main')||document.getElementById('app'),error));

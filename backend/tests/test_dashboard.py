@@ -89,6 +89,7 @@ def make_dashboard_dataset(client, db, headers, prefix: str, stamp: datetime, pi
 
     won = db.get(Deal, won_deal["id"])
     won.updated_at = stamp
+    won.closed_at = stamp
     completed = db.get(Task, completed_task["id"])
     completed.completed_at = stamp
     db.commit()

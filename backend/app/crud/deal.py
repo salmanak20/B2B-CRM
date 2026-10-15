@@ -1,4 +1,6 @@
+from app.crud.sorting import sorted_query
 from typing import List, Optional, Tuple
+from datetime import datetime, timezone
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
@@ -19,6 +21,7 @@ def deal_status_for_stage(stage: PipelineStage) -> str:
 def create_deal(db: Session, deal_in: DealCreate, owner_id: int, stage: PipelineStage) -> Deal:
     data = deal_in.model_dump(exclude={"owner_id"})
     data["status"] = deal_status_for_stage(stage)
+    data["closed_at"] = datetime.now(timezone.utc) if stage.is_closed else None
     db_deal = Deal(**data, owner_id=owner_id)
     db.add(db_deal)
     db.commit()
@@ -32,6 +35,8 @@ def get_deal(db: Session, deal_id: int) -> Optional[Deal]:
 
 def get_deals(
     db: Session,
+    sort_by: str = "id",
+    sort_dir: str = "asc",
     skip: int = 0,
     limit: int = 20,
     search: Optional[str] = None,
@@ -62,11 +67,12 @@ def get_deals(
     if status is not None:
         query = query.where(Deal.status == status)
     total = db.scalar(select(func.count()).select_from(query.subquery())) or 0
-    items = list(db.scalars(query.order_by(Deal.id).offset(skip).limit(limit)).all())
+    items = list(db.scalars(sorted_query(query, Deal, sort_by, sort_dir).offset(skip).limit(limit)).all())
     return items, total
 
 
 def update_deal(db: Session, db_deal: Deal, deal_in: DealUpdate, stage: PipelineStage | None = None) -> Deal:
+    previous_status=db_deal.status
     update_data = deal_in.model_dump(exclude_unset=True)
     if update_data.get("owner_id") is None:
         update_data.pop("owner_id", None)
@@ -74,6 +80,8 @@ def update_deal(db: Session, db_deal: Deal, deal_in: DealUpdate, stage: Pipeline
         setattr(db_deal, field, value)
     if stage is not None:
         db_deal.status = deal_status_for_stage(stage)
+        if db_deal.status=="open":db_deal.closed_at=None
+        elif previous_status!=db_deal.status:db_deal.closed_at=datetime.now(timezone.utc)
     db.add(db_deal)
     db.commit()
     db.refresh(db_deal)
@@ -81,8 +89,12 @@ def update_deal(db: Session, db_deal: Deal, deal_in: DealUpdate, stage: Pipeline
 
 
 def move_deal_stage(db: Session, db_deal: Deal, stage: PipelineStage) -> Deal:
+    previous_status=db_deal.status
     db_deal.stage_id = stage.id
+    db_deal.probability = stage.probability
     db_deal.status = deal_status_for_stage(stage)
+    if db_deal.status=="open":db_deal.closed_at=None
+    elif previous_status!=db_deal.status:db_deal.closed_at=datetime.now(timezone.utc)
     db.add(db_deal)
     db.commit()
     db.refresh(db_deal)

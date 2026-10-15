@@ -1,0 +1,883 @@
+
+
+
+
+
+SOFTWARE REQUIREMENTS SPECIFICATION
+
+
+
+B2B CRM System
+
+
+
+
+Enterprise Sales & Customer Relationship Management Platform
+
+
+
+
+
+
+
+
+
+
+
+
+
+Prepared for: Software Engineering / Academic Project
+Document Type: Software Requirements Specification (SRS)
+Version: 1.0
+Date: August 2026
+
+
+
+
+
+
+
+
+1. Introduction
+
+The B2B CRM System is a web-based enterprise customer relationship management platform designed to centralize lead, contact, company, deal, activity, task, automation, and sales analytics information. The system provides sales teams and managers with a single source of truth for managing customer relationships and the complete sales lifecycle.
+
+The system is intended for business-to-business organizations that need to replace scattered spreadsheets, email-based follow-ups, chat messages, and disconnected records with a unified CRM workflow. The platform emphasizes visibility, collaboration, automation, and data-driven sales decisions.
+
+
+
+
+
+2. Problem Statement
+
+B2B sales teams frequently manage customer information across spreadsheets, emails, messaging platforms, personal notes, and separate reporting tools. This fragmentation makes it difficult to maintain accurate customer histories, track leads, coordinate team activities, follow up on opportunities, and forecast revenue.
+
+
+
+
+
+Leads and opportunities can be lost or overlooked.
+
+
+
+
+
+Customer information is distributed across multiple tools.
+
+
+
+
+
+Sales representatives may lack complete customer context.
+
+
+
+
+
+Follow-ups and tasks can be missed.
+
+
+
+
+
+Managers have limited real-time visibility into the sales pipeline.
+
+
+
+
+
+Sales forecasting and performance reporting can require manual work.
+
+
+
+
+
+Teams may duplicate work because customer ownership and activity are unclear.
+
+The proposed CRM addresses these issues by providing one centralized platform for customer data, sales processes, team activities, automation, and analytics.
+
+
+
+
+
+3. Scope
+
+The project includes the following major areas:
+
+
+
+
+
+User authentication and role-based access control.
+
+
+
+
+
+Lead management and lead qualification.
+
+
+
+
+
+Contact and company/account management.
+
+
+
+
+
+Customer 360° profiles with relationship history.
+
+
+
+
+
+Deal and sales pipeline management.
+
+
+
+
+
+Task, reminder, and activity management.
+
+
+
+
+
+Workflow automation and follow-up support.
+
+
+
+
+
+Team collaboration and ownership of records.
+
+
+
+
+
+Sales analytics, dashboards, reports, and forecasting.
+
+
+
+
+
+Search, filtering, sorting, and record organization.
+
+
+
+
+
+Notifications for important activities and deadlines.
+
+Out of scope for the initial release:
+
+
+
+
+
+Full accounting and financial management.
+
+
+
+
+
+Payroll and human resource management.
+
+
+
+
+
+Advanced marketing campaign execution.
+
+
+
+
+
+Native mobile applications.
+
+
+
+
+
+Complex third-party integrations beyond those specifically approved for the project.
+
+
+
+
+
+4. Objectives
+
+
+
+
+
+Centralize B2B customer and sales information in one platform.
+
+
+
+
+
+Provide a clear and manageable sales pipeline from lead capture to closed deal.
+
+
+
+
+
+Improve visibility into customer relationships and communication history.
+
+
+
+
+
+Reduce missed follow-ups through tasks, reminders, and automation.
+
+
+
+
+
+Improve collaboration between sales representatives and managers.
+
+
+
+
+
+Provide real-time KPIs and analytics for informed decision-making.
+
+
+
+
+
+Support sales forecasting and performance monitoring.
+
+
+
+
+
+Reduce manual data handling and duplicated work.
+
+
+
+
+
+Provide a scalable, secure, and user-friendly enterprise web application.
+
+
+
+
+
+5. Stakeholders
+
+Stakeholder
+
+Interest / Responsibility
+
+Business Owner / Management
+
+Business goals, revenue visibility, reporting, and overall system value.
+
+Sales Manager
+
+Pipeline monitoring, team performance, forecasting, and sales oversight.
+
+Sales Representative
+
+Lead, contact, deal, task, activity, and customer relationship management.
+
+System Administrator
+
+Users, roles, permissions, configuration, security, and system maintenance.
+
+Customer / Prospect
+
+Indirect beneficiary of organized and timely sales communication.
+
+Development Team
+
+Design, implementation, testing, deployment, and maintenance.
+
+Project Supervisor / Client
+
+Requirements validation, acceptance, and project evaluation.
+
+
+
+
+
+6. User Roles
+
+Role
+
+Main Permissions
+
+Administrator
+
+Manage users, roles, permissions, system settings, and organization-wide data.
+
+Sales Manager
+
+View team data, manage pipeline, assign leads, monitor activities, and access reports.
+
+Sales Representative
+
+Create and manage assigned leads, contacts, companies, deals, tasks, and activities.
+
+Viewer / Management
+
+Read-only access to approved dashboards, reports, and business performance information.
+
+
+
+
+
+7. Functional Requirements
+
+ID
+
+Requirement
+
+Description
+
+FR-01
+
+Authentication
+
+The system shall allow authorized users to sign in and sign out securely.
+
+FR-02
+
+Role-Based Access
+
+The system shall restrict features and records according to user roles and permissions.
+
+FR-03
+
+User Management
+
+Administrators shall be able to create, update, deactivate, and manage user accounts.
+
+FR-04
+
+Lead Management
+
+Users shall be able to create, view, update, assign, qualify, and track leads.
+
+FR-05
+
+Lead Status
+
+The system shall support lead statuses such as New, Contacted, Qualified, Nurturing, and Converted.
+
+FR-06
+
+Contact Management
+
+Users shall be able to store and manage contact details and associate contacts with companies and deals.
+
+FR-07
+
+Company Management
+
+Users shall be able to create and manage business/company records.
+
+FR-08
+
+Customer 360°
+
+The system shall display company/contact details, activities, notes, communications, and related deals in one view.
+
+FR-09
+
+Deal Management
+
+Users shall be able to create, edit, assign, move, and track sales opportunities.
+
+FR-10
+
+Sales Pipeline
+
+The system shall provide pipeline stages including New Lead, Qualified, Meeting, Proposal, Negotiation, and Won.
+
+FR-11
+
+Deal Information
+
+The system shall store deal value, owner, stage, probability, expected close date, and related company/contact.
+
+FR-12
+
+Tasks & Reminders
+
+Users shall be able to create, assign, prioritize, complete, and track sales tasks.
+
+FR-13
+
+Activities
+
+The system shall record meetings, calls, emails, notes, and other customer-related activities.
+
+FR-14
+
+Workflow Automation
+
+Authorized users shall be able to configure approved automated actions such as reminders and follow-up tasks.
+
+FR-15
+
+Notifications
+
+The system shall notify users about relevant deadlines, assignments, and important activities.
+
+FR-16
+
+Search & Filters
+
+Users shall be able to search and filter leads, contacts, companies, and deals.
+
+FR-17
+
+Dashboard
+
+The system shall provide KPIs such as total leads, active deals, pipeline value, conversion rate, and revenue forecast.
+
+FR-18
+
+Analytics
+
+The system shall provide revenue trends, conversion funnels, pipeline forecasts, lead-source performance, and sales performance.
+
+FR-19
+
+Reports
+
+Authorized users shall be able to generate and view sales and performance reports.
+
+FR-20
+
+Data Export
+
+Authorized users shall be able to export permitted business data and reports in supported formats.
+
+FR-21
+
+Audit Trail
+
+The system should record important changes to business records for accountability and traceability.
+
+FR-22
+
+Data Validation
+
+The system shall validate required fields and prevent invalid or incomplete records from being saved.
+
+
+
+
+
+8. Non-Functional Requirements
+
+ID
+
+Category
+
+Requirement
+
+NFR-01
+
+Performance
+
+Common dashboard and record operations should load within an acceptable response time under normal operating conditions.
+
+NFR-02
+
+Availability
+
+The system should be available during agreed business hours with appropriate monitoring and recovery procedures.
+
+NFR-03
+
+Security
+
+Authentication, authorization, secure password handling, and protected access to business data shall be implemented.
+
+NFR-04
+
+Privacy
+
+Customer and business information shall only be accessible to authorized users.
+
+NFR-05
+
+Usability
+
+The interface shall be intuitive, consistent, responsive, and suitable for users with different levels of technical expertise.
+
+NFR-06
+
+Scalability
+
+The architecture should support growth in users, leads, contacts, deals, and historical activities.
+
+NFR-07
+
+Reliability
+
+The system should preserve data integrity and handle errors without corrupting business records.
+
+NFR-08
+
+Maintainability
+
+The application should use modular, documented, and maintainable code.
+
+NFR-09
+
+Compatibility
+
+The web application should work on modern desktop browsers and common screen sizes.
+
+NFR-10
+
+Backup & Recovery
+
+Important business data should be backed up and recoverable according to the organization's recovery policy.
+
+NFR-11
+
+Auditability
+
+Important administrative and business-data changes should be traceable to authorized users.
+
+NFR-12
+
+Accessibility
+
+The interface should follow practical accessibility principles such as readable contrast, labels, keyboard-friendly controls, and clear feedback.
+
+
+
+
+
+9. System Constraints
+
+
+
+
+
+The system requires a supported web browser and network connectivity.
+
+
+
+
+
+Access to data and features depends on the assigned user role and permissions.
+
+
+
+
+
+The initial release is focused on web-based CRM functionality.
+
+
+
+
+
+The quality of analytics depends on the completeness and accuracy of entered business data.
+
+
+
+
+
+Third-party integrations, if added, are constrained by the APIs, authentication methods, quotas, and availability of those services.
+
+
+
+
+
+System performance depends on hosting resources, database configuration, network conditions, and data volume.
+
+
+
+
+
+The project schedule, budget, and available development resources may limit advanced functionality in the first release.
+
+
+
+
+
+Business rules such as pipeline stages, permissions, and required fields must be agreed with the client or project supervisor.
+
+
+
+
+
+10. Assumptions
+
+
+
+
+
+Users have valid accounts and appropriate permissions before accessing protected features.
+
+
+
+
+
+The organization will provide accurate lead, customer, company, and deal information.
+
+
+
+
+
+Users have basic computer and web application skills.
+
+
+
+
+
+The organization has reliable internet access for normal system operation.
+
+
+
+
+
+Management will define the sales pipeline stages and business KPIs required by the organization.
+
+
+
+
+
+The client will provide or approve branding, business terminology, and data policies.
+
+
+
+
+
+A suitable database and hosting environment will be available for deployment.
+
+
+
+
+
+System backups and access policies will be configured according to organizational requirements.
+
+
+
+
+
+11. Use Cases
+
+The following use cases describe the primary interactions between CRM users and the system.
+
+ID
+
+Use Case
+
+Actor
+
+Trigger
+
+Expected Result
+
+UC-01
+
+User Login
+
+Administrator / Manager / Sales Representative / Viewer
+
+User enters valid credentials.
+
+System authenticates the user and opens the appropriate dashboard.
+
+UC-02
+
+Manage Leads
+
+Sales Representative / Sales Manager
+
+User creates or updates a lead.
+
+System validates the data, stores the lead, and assigns the appropriate status/owner.
+
+UC-03
+
+Qualify Lead
+
+Sales Representative / Sales Manager
+
+A lead becomes suitable for sales follow-up.
+
+System updates the lead status and records the qualification activity.
+
+UC-04
+
+Manage Contacts
+
+Sales Representative / Sales Manager
+
+User adds or edits a contact.
+
+System stores the contact and links it to the relevant company and/or deal.
+
+UC-05
+
+Manage Company
+
+Sales Representative / Sales Manager
+
+User creates or updates a company record.
+
+System maintains company details and associated contacts, deals, and activities.
+
+UC-06
+
+View Customer 360°
+
+Sales Representative / Sales Manager
+
+User opens a customer/company profile.
+
+System displays related contacts, activities, notes, deals, and relationship history.
+
+UC-07
+
+Manage Deal
+
+Sales Representative / Sales Manager
+
+User creates or updates an opportunity.
+
+System stores deal value, stage, probability, owner, and expected close date.
+
+UC-08
+
+Move Deal Through Pipeline
+
+Sales Representative / Sales Manager
+
+User changes a deal stage.
+
+System updates the pipeline and recalculates relevant dashboard/forecast information.
+
+UC-09
+
+Create Task
+
+Sales Representative / Sales Manager
+
+User schedules a follow-up or sales task.
+
+System saves the task and provides reminders/notifications according to configuration.
+
+UC-10
+
+Automate Follow-Up
+
+Sales Manager / Administrator
+
+Authorized user creates an automation rule.
+
+System triggers the configured action when the defined condition is met.
+
+UC-11
+
+View Analytics
+
+Sales Manager / Viewer / Administrator
+
+User opens analytics.
+
+System displays KPIs, revenue trends, conversion funnel, pipeline forecast, and sales performance.
+
+UC-12
+
+Generate Report
+
+Sales Manager / Administrator
+
+User selects a report and date/filter criteria.
+
+System generates the requested report using available CRM data.
+
+UC-13
+
+Manage Users & Permissions
+
+Administrator
+
+Administrator creates or changes a user account.
+
+System applies the selected role and permissions.
+
+UC-14
+
+Search CRM Records
+
+All authorized users
+
+User enters a search term or filter.
+
+System returns matching permitted records.
+
+
+
+
+
+11.1 Primary Sales Lifecycle
+
+The core business flow of the CRM is designed around the following lifecycle:
+
+
+
+
+
+Capture a lead from an approved source.
+
+
+
+
+
+Qualify the lead based on business criteria.
+
+
+
+
+
+Convert or associate the lead with a contact/company.
+
+
+
+
+
+Create and manage a deal opportunity.
+
+
+
+
+
+Move the deal through the sales pipeline.
+
+
+
+
+
+Schedule and complete activities and follow-ups.
+
+
+
+
+
+Close the deal as Won or Lost.
+
+
+
+
+
+Use analytics and reports to evaluate performance and improve future sales decisions.
+
+
+
+
+
+End of Software Requirements Specification

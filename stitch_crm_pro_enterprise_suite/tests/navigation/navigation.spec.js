@@ -1,0 +1,4 @@
+import {test,expect} from '@playwright/test';
+import {authenticate,api,company,lead,pipeline,unique,email,loginUI,collectPageErrors} from '../fixtures/live-api.js';
+
+test('sidebar routes and browser history work on desktop and mobile',async({page})=>{await authenticate(page);await page.goto('/dashboard');if(await page.locator('#mobile-menu-btn').isVisible())await page.locator('#mobile-menu-btn').click();await page.locator('.sidebar').getByRole('link',{name:'Companies',exact:true}).click();await expect(page).toHaveURL(/\/companies$/);await page.reload();await expect(page.getByRole('heading',{name:'Companies',exact:true})).toBeVisible();await page.goBack();await expect(page).toHaveURL(/\/dashboard$/);await page.goForward();await expect(page).toHaveURL(/\/companies$/);const links=await page.locator('.sidebar nav a').evaluateAll(es=>es.map(e=>e.getAttribute('href')));expect(links.every(h=>h&&h!=='#')).toBe(true);});

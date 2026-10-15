@@ -1,0 +1,97 @@
+
+
+
+
+
+B2B CRM SYSTEM
+ERD & SYSTEM ARCHITECTURE
+
+
+
+Software Engineering Project Documentation — Version 1.0
+
+
+
+
+
+1. Entity Relationship Diagram (ERD)
+
+The ERD defines the core CRM data model, including users and permissions, companies, contacts, leads, deals, pipeline stages, activities, tasks, notes, automation, notifications, reports, and audit logs.
+
+
+
+
+
+
+
+
+
+2. System Architecture Diagram
+
+The proposed architecture separates the web UI, API, business logic, relational database, optional background services, integrations, monitoring, and deployment infrastructure.
+
+
+
+
+
+
+
+
+
+3. Recommended Technology Stack
+
+
+
+
+
+Frontend — React / Next.js
+
+
+
+
+
+Backend — FastAPI / Python
+
+
+
+
+
+Database — PostgreSQL
+
+
+
+
+
+Authentication — JWT / OAuth 2.0
+
+
+
+
+
+API — REST / JSON
+
+
+
+
+
+Charts — Recharts / Chart.js
+
+
+
+
+
+Cache & Jobs — Redis (optional)
+
+
+
+
+
+Version Control — Git / GitHub
+
+
+
+
+
+4. Development Sequence
+
+Finalize requirements → finalize ERD and architecture → create database schema → implement authentication and authorization → build CRM APIs → connect the UI → implement automation and analytics → test → deploy.
