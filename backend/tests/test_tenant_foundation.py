@@ -189,7 +189,7 @@ def test_postgresql_additive_migration_preserves_legacy_records():
             db.execute(table.insert().values(**values))
         original_columns = {name: [column["name"] for column in sa.inspect(db).get_columns(name)] for name in sa.inspect(db).get_table_names() if name != "alembic_version"}
         before = {name: db.execute(sa.text(f'SELECT * FROM "{name}"')).mappings().all() for name in original_columns}
-    command.upgrade(config, "head")
+    command.upgrade(config, "a1b2c3d4e501")
     with engine.connect() as db:
         for name, columns in original_columns.items():
             selected = ", ".join(f'"{column}"' for column in columns)
@@ -218,7 +218,7 @@ def test_postgresql_additive_migration_preserves_legacy_records():
     command.downgrade(config, "f8b3015a0001")
     with engine.connect() as db:
         assert db.execute(sa.text("SELECT id,name,owner_id FROM companies")).one() == (61,"Existing company",51)
-    command.upgrade(config, "head")
+    command.upgrade(config, "a1b2c3d4e501")
     # Validate real PostgreSQL constraint enforcement, including deferred commit checks.
     with engine.begin() as db:
         db.execute(sa.text("INSERT INTO organizations (id,name,slug) VALUES (1,'One','one'),(2,'Two','two')"))

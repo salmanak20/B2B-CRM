@@ -29,6 +29,8 @@ def ensure_can_modify_crm_record(record_owner_id: int, current_user: User) -> No
 
 
 def resolve_owner_id(db: Session, current_user: User, requested_owner_id: int | None) -> int:
+    from app.db.tenant_session import require_member
+    require_member(db, requested_owner_id or current_user.id)
     if requested_owner_id is None or requested_owner_id == current_user.id:
         return current_user.id
     if not can_manage_all_crm_records(current_user):

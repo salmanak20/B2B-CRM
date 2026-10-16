@@ -16,6 +16,7 @@ BIN = Path(os.environ.get("CRM_TEST_PG_BIN", r"C:\Program Files\PostgreSQL\18\bi
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--backfill", action="store_true", help="Run only Phase 1B PostgreSQL tests")
+    parser.add_argument("--isolation", action="store_true", help="Run only Phase 2 tenant isolation tests")
     args = parser.parse_args()
     password = secrets.token_urlsafe(32)
     with socket.socket() as listener:
@@ -51,7 +52,7 @@ def main():
             run([BIN / "pg_ctl.exe", "-D", data, "-l", scratch / "server.log", "-o", f"-h 127.0.0.1 -p {port}", "-w", "start"])
             started = True
             run([BIN / "createdb.exe", "crm_test_phase1a"])
-            tests = ["tests/test_tenant_backfill.py"] if args.backfill else ["tests/test_tenant_foundation.py", "tests/test_auth.py"]
+            tests = ["tests/test_tenant_isolation.py"] if args.isolation else (["tests/test_tenant_backfill.py"] if args.backfill else ["tests/test_tenant_foundation.py", "tests/test_auth.py"])
             print(run([sys.executable, "-B", "-m", "pytest", "-q", *tests, "--disable-warnings"]))
         finally:
             if started:

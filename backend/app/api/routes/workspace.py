@@ -51,7 +51,7 @@ def roles(db:SessionDep,current_user:CurrentActiveUser):
 
 @router.get("/workspace")
 def workspace(db:SessionDep,current_user:CurrentActiveUser):
-    row=db.get(WorkspaceSettings,1)
+    row=db.scalar(select(WorkspaceSettings))
     return {"name":row.name if row else "CRM Pro","timezone":row.timezone if row else "UTC","currency":row.currency if row else "USD"}
 
 class WorkspaceUpdate(BaseModel):
@@ -64,21 +64,24 @@ class WorkspaceUpdate(BaseModel):
 def update_workspace(body:WorkspaceUpdate,db:SessionDep,current_user:CurrentActiveUser):
     try:ZoneInfo(body.timezone)
     except ZoneInfoNotFoundError:raise HTTPException(422,"Use a valid IANA timezone")
-    row=db.get(WorkspaceSettings,1)
+    row=db.scalar(select(WorkspaceSettings))
     if not row:
-        row=WorkspaceSettings(id=1,**body.model_dump());db.add(row)
+        row=WorkspaceSettings(**body.model_dump());db.add(row)
     else:
         for key,value in body.model_dump().items():setattr(row,key,value)
     db.commit()
-    log_event(db,"Workspace Updated",current_user.id,"Workspace",1,"Workspace name and timezone updated")
+    log_event(db,"Workspace Updated",current_user.id,"Workspace",row.id,"Workspace name and timezone updated")
     return body
 
 @router.get("/directory")
 def directory(db:SessionDep,current_user:CurrentActiveUser):
+    from app.models.membership import Membership
     # Names and IDs only; full account/email administration remains administrator-only.
     if current_user.role.name not in {"admin","sales_manager"}:
         return [{"id":current_user.id,"name":current_user.name}]
-    return [{"id":u.id,"name":u.name} for u in db.scalars(select(User).where(User.is_active.is_(True)).order_by(User.name)).all()]
+    return [{"id":u.id,"name":u.name} for u in db.scalars(select(User).join(Membership).where(
+        User.is_active.is_(True),Membership.organization_id==current_user.organization_id,
+        Membership.is_active.is_(True)).order_by(User.name)).all()]
 
 @router.get("/records/{entity}/{record_id}/related")
 def related(entity:str,record_id:int,db:SessionDep,current_user:CurrentActiveUser):
@@ -113,6 +116,8 @@ def workflows(db:SessionDep,current_user:CurrentActiveUser):
 
 def validate_assignee(db,user_id):
     if user_id:
+        from app.db.tenant_session import require_member
+        require_member(db,user_id)
         user=db.get(User,user_id)
         if not user or not user.is_active:raise HTTPException(422,"Choose an active assignee")
 

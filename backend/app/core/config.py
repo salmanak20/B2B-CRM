@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     LOGIN_RATE_LIMIT: int = 10
     RATE_WINDOW_SECONDS: int = 900
     DUE_NOTIFICATIONS_ENABLED: bool = False
+    TENANT_ISOLATION_ENABLED: bool = False
 
     @model_validator(mode="after")
     def production_safety(self):

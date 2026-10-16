@@ -20,7 +20,8 @@ if settings.DATABASE_URL.startswith("sqlite"):
     def sqlite_integrity(connection,record):
         connection.execute("PRAGMA foreign_keys=ON")
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+from app.db.tenant_session import TenantSession
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=TenantSession)
 
 class Base(DeclarativeBase):
     pass

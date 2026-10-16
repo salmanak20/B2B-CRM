@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr, field_validator
 from sqlalchemy import select, delete
-from app.api.deps import SessionDep, CurrentActiveUser
+from app.api.deps import SessionDep, CurrentActiveUser, CurrentUser, active_membership, TenantUser
 from app.core.config import settings
 from app.core.security import verify_password, create_access_token
 from app.core.provider import auth_request
@@ -77,7 +77,10 @@ def login(db:SessionDep,request:Request,response:Response,form:OAuth2PasswordReq
         db.execute(delete(AuthSession).where(AuthSession.id==session_key(previous)))
     create_session(db,response,user,remember,provider)
     log_event(db,"Login",user.id,"User",user.id,"User signed in")
-    result={"user":UserResponse.model_validate(user).model_dump(mode="json"),"token_type":"cookie",
+    principal = user
+    if db.info.get("organization_id"):
+        principal = TenantUser(user, active_membership(db,user.id,db.info["organization_id"]))
+    result={"user":UserResponse.model_validate(principal).model_dump(mode="json"),"token_type":"cookie",
             "expires_in":(settings.REMEMBER_DAYS*86400 if remember else settings.SESSION_HOURS*3600)}
     if settings.AUTH_PROVIDER=="legacy" and settings.ENVIRONMENT!="production":
         result.update(access_token=create_access_token(user.id,expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)),token_type="bearer")
@@ -86,6 +89,30 @@ def login(db:SessionDep,request:Request,response:Response,form:OAuth2PasswordReq
 @router.get("/me",response_model=UserResponse)
 def me(current_user:CurrentActiveUser):
     return current_user
+
+class OrganizationSelection(BaseModel):
+    organization_id: int
+
+@router.get("/organizations")
+def organizations(db:SessionDep,current_user:CurrentUser):
+    from app.models.membership import Membership
+    from app.models.organization import Organization
+    if not settings.TENANT_ISOLATION_ENABLED or not current_user.is_active:
+        raise HTTPException(403,"Organization selection is unavailable")
+    return [{"id":o.id,"name":o.name} for o in db.scalars(select(Organization).join(Membership).where(
+        Membership.user_id==current_user.id,Membership.is_active.is_(True))).all()]
+
+@router.post("/organization")
+def select_organization(body:OrganizationSelection,db:SessionDep,request:Request,current_user:CurrentUser):
+    if not settings.TENANT_ISOLATION_ENABLED or not current_user.is_active:
+        raise HTTPException(403,"Organization selection is unavailable")
+    session=getattr(request.state,"auth_session",None)
+    if not session or session.recovery:
+        raise HTTPException(403,"A normal cookie session is required")
+    active_membership(db,current_user.id,body.organization_id)
+    session.active_organization_id=body.organization_id
+    db.commit()
+    return {"organization_id":body.organization_id}
 
 @router.post("/logout",status_code=204)
 def logout(db:SessionDep,request:Request,response:Response):
@@ -125,7 +152,11 @@ def recovery(body:RecoveryVerify,db:SessionDep,request:Request,response:Response
     return {"message":"Link verified. Set a new password."}
 
 @router.post("/password")
-def change_password(body:PasswordChange,db:SessionDep,request:Request,response:Response,current_user:CurrentActiveUser):
+def change_password(body:PasswordChange,db:SessionDep,request:Request,response:Response,current_user:CurrentUser):
+    # Account recovery is global authentication, not a CRM data request. A user
+    # with several memberships must be able to recover before selecting a tenant.
+    if not current_user.is_active:
+        raise HTTPException(401,"Inactive user")
     if settings.AUTH_PROVIDER!="supabase":
         raise HTTPException(503,"Password changes require the production identity provider")
     session=current_session(db,request.cookies.get(settings.SESSION_COOKIE_NAME))
