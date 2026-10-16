@@ -1,5 +1,6 @@
-"""Test Phase 1A in a fresh disposable localhost PostgreSQL cluster only."""
+"""Test Phase 1A or Phase 1B in a fresh disposable localhost PostgreSQL cluster."""
 import os
+import argparse
 from pathlib import Path
 import secrets
 import socket
@@ -13,6 +14,9 @@ BIN = Path(os.environ.get("CRM_TEST_PG_BIN", r"C:\Program Files\PostgreSQL\18\bi
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--backfill", action="store_true", help="Run only Phase 1B PostgreSQL tests")
+    args = parser.parse_args()
     password = secrets.token_urlsafe(32)
     with socket.socket() as listener:
         listener.bind(("127.0.0.1", 0))
@@ -47,7 +51,8 @@ def main():
             run([BIN / "pg_ctl.exe", "-D", data, "-l", scratch / "server.log", "-o", f"-h 127.0.0.1 -p {port}", "-w", "start"])
             started = True
             run([BIN / "createdb.exe", "crm_test_phase1a"])
-            print(run([sys.executable, "-B", "-m", "pytest", "-q", "tests/test_tenant_foundation.py", "tests/test_auth.py", "--disable-warnings"]))
+            tests = ["tests/test_tenant_backfill.py"] if args.backfill else ["tests/test_tenant_foundation.py", "tests/test_auth.py"]
+            print(run([sys.executable, "-B", "-m", "pytest", "-q", *tests, "--disable-warnings"]))
         finally:
             if started:
                 run([BIN / "pg_ctl.exe", "-D", data, "-w", "stop", "-m", "fast"])
