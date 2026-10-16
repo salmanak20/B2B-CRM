@@ -92,12 +92,8 @@ def update_user_by_id(
         require_local_identity(db,user)
     if user_in.role_id is not None:
         role=db.get(Role,user_in.role_id)
-        if role.name not in {"admin","sales_manager","sales_rep","viewer"} or principal.membership.role=="owner":
-            raise HTTPException(409,"Organization owner changes require a separately reviewed operation")
-        principal.membership.role=role.name
-        principal.membership.permission_role_name=role.name
-    if user_in.is_active is not None:
-        principal.membership.is_active=user_in.is_active
+    from app.services.team import change_member
+    change_member(db,current_user,user_id,role=role.name if user_in.role_id is not None else None,is_active=user_in.is_active)
     profile=UserUpdate(**user_in.model_dump(exclude={"role_id","is_active"},exclude_unset=True))
     result=update_user(db,db_user=user,user_in=profile)
     log_event(db,"User Updated",current_user.id,"User",user.id,"User profile, role or access updated")
@@ -113,9 +109,8 @@ def change_user_status(
     
     if user_id==current_user.id and not is_active:
         raise HTTPException(409,"Ask another administrator to deactivate your account")
-    principal=tenant_user(db,user)
-    principal.membership.is_active=is_active
-    db.commit()
+    from app.services.team import change_member
+    change_member(db,current_user,user_id,is_active=is_active)
     log_event(db, action="User Status Changed", user_id=current_user.id, entity="User", entity_id=user.id, description=f"User {user.email} active status changed to {is_active}")
     return tenant_user(db,user)
 
@@ -135,6 +130,10 @@ def invite_existing_user(user_id:int,body:LinkExistingIdentity,db:SessionDep,cur
     user=db.get(User,user_id)
     if not user:raise HTTPException(404,'User not found')
     require_local_identity(db,user)
+    from app.services.team import manager
+    actor=manager(db,current_user)
+    if tenant_user(db,user).membership.role=="owner" and actor.role!="owner":
+        raise HTTPException(403,"Only an owner can manage another owner's identity")
     if not user.is_active:raise HTTPException(409,'Activate this account before sending an invitation')
     if user.auth_user_id:raise HTTPException(409,'This account already has a provider identity')
     if body.auth_user_id:
@@ -149,30 +148,10 @@ def invite_existing_user(user_id:int,body:LinkExistingIdentity,db:SessionDep,cur
     log_event(db,'User Identity Linked',current_user.id,'User',user.id,'Existing ownership and role preserved during provider migration')
     return tenant_user(db,user)
 
-@router.post("",response_model=UserResponse,dependencies=[Depends(require_role(["admin"]))])
+@router.post("",dependencies=[Depends(require_role(["admin"]))])
 def invite_user(body:InviteUser,db:SessionDep,current_user:CurrentActiveUser):
+    from app.services.team import invite
+    from app.api.routes.team import invitation_data
     role=db.get(Role,body.role_id)
-    if not role or role.name not in {"admin","sales_manager","sales_rep","viewer"}:
-        raise HTTPException(422,"Role does not exist")
-    if db.scalar(select(User).where(User.email==str(body.email).lower())):
-        raise HTTPException(409,"An account with this email already exists")
-    provider_id=None
-    if settings.AUTH_PROVIDER=="supabase":
-        identity=auth_request("POST","/invite",{"email":str(body.email),"data":{"name":body.name}},admin=True)
-        provider_id=identity["id"]
-    elif body.password:
-        try:
-            UserRegister.secure_password(body.password)
-        except ValueError as error:
-            raise HTTPException(422,str(error))
-    else:
-        raise HTTPException(422,"Development account creation requires a password")
-    user=User(name=body.name.strip(),email=str(body.email).lower(),role_id=body.role_id,is_active=True,
-              auth_user_id=provider_id,password_hash=hash_password(body.password if settings.AUTH_PROVIDER=='legacy' and body.password else secrets.token_urlsafe(36)))
-    db.add(user)
-    db.flush()
-    db.add(Membership(organization_id=organization_id(db),user_id=user.id,role=role.name,permission_role_name=role.name,is_active=True))
-    db.commit()
-    db.refresh(user)
-    log_event(db,"User Invited",current_user.id,"User",user.id,"Account provisioned for workspace")
-    return tenant_user(db,user)
+    if not role:raise HTTPException(422,"Role does not exist")
+    return invitation_data(invite(db,current_user,body.name,str(body.email),role.name))

@@ -36,7 +36,7 @@ def isolation_engine():
     assert engine.url.database.startswith("crm_test_") and os.environ.get("CRM_TEST_RUN")=="1"
     with engine.connect() as db:
         assert sa.inspect(db).get_table_names()==[]
-    command.upgrade(Config(str(Path(__file__).resolve().parents[1]/"alembic.ini")),"a1b2c3d4e502")
+    command.upgrade(Config(str(Path(__file__).resolve().parents[1]/"alembic.ini")),"head")
     yield engine
     engine.dispose()
 

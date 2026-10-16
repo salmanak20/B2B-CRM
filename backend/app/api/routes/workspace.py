@@ -114,16 +114,19 @@ class RuleInput(BaseModel):
 def workflows(db:SessionDep,current_user:CurrentActiveUser):
     return db.scalars(select(WorkflowRule).order_by(WorkflowRule.id)).all()
 
-def validate_assignee(db,user_id):
+def validate_assignee(db,user_id,actor=None):
     if user_id:
         from app.db.tenant_session import require_member
         require_member(db,user_id)
+        if actor:
+            from app.api.ownership import validate_representative
+            validate_representative(db,actor,user_id)
         user=db.get(User,user_id)
         if not user or not user.is_active:raise HTTPException(422,"Choose an active assignee")
 
 @router.post("/workflows",dependencies=[Depends(require_role(["admin","sales_manager"]))])
 def create_rule(body:RuleInput,db:SessionDep,current_user:CurrentActiveUser):
-    validate_assignee(db,body.assigned_to_id)
+    validate_assignee(db,body.assigned_to_id,current_user)
     rule=WorkflowRule(**body.model_dump(),owner_id=current_user.id);db.add(rule);db.commit();db.refresh(rule)
     log_event(db,"Workflow Created",current_user.id,"Workflow",rule.id,rule.name)
     db.refresh(rule)
@@ -133,7 +136,7 @@ def create_rule(body:RuleInput,db:SessionDep,current_user:CurrentActiveUser):
 def update_rule(rule_id:int,body:RuleInput,db:SessionDep,current_user:CurrentActiveUser):
     rule=db.get(WorkflowRule,rule_id)
     if not rule:raise HTTPException(404,"Workflow not found")
-    validate_assignee(db,body.assigned_to_id)
+    validate_assignee(db,body.assigned_to_id,current_user)
     for key,value in body.model_dump().items():setattr(rule,key,value)
     db.commit();db.refresh(rule)
     log_event(db,"Workflow Updated",current_user.id,"Workflow",rule.id,rule.name)

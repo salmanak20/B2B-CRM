@@ -115,6 +115,8 @@ app.include_router(workspace.router,prefix="/api/v1",tags=["Workspace"])
 app.include_router(conversions.router,prefix="/api/v1",tags=["Lead conversion"])
 app.include_router(imports.router,prefix="/api/v1",tags=["CSV import"])
 app.include_router(attachments.router,prefix="/api/v1",tags=["Attachments"])
+from app.api.routes import team
+app.include_router(team.router,prefix="/api/v1")
 
 @app.get("/")
 def root():

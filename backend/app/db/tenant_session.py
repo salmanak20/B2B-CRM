@@ -43,11 +43,12 @@ def scope_queries(state):
     from app.models.tenant import TenantOwned
     from app.models.membership import Membership
     from app.models.user import User
-    from app.db.tenant_backfill import TENANT_TABLES
+    from app.db.session import Base
+    tenant_tables={m.local_table.name for m in Base.registry.mappers if issubclass(m.class_,TenantOwned)}
     statement = state.statement
     if isinstance(statement, TextClause):
         raise HTTPException(403, "Raw SQL is unavailable in application sessions")
-    touches_tenant = any(getattr(node, "name", None) in TENANT_TABLES
+    touches_tenant = any(getattr(node, "name", None) in tenant_tables
                          for node in visitors.iterate(statement))
     org = state.session.info.get("organization_id")
     if touches_tenant and not org:
@@ -86,6 +87,7 @@ def validate_writes(db, flush_context, instances):
     from app.models.user import User
     from app.models.workspace import Attachment
     from app.models.notification import Notification
+    from app.models.audit_log import AuditLog
     models = {mapper.local_table.name: mapper.class_ for mapper in Base.registry.mappers}
     objects = list(db.new) + list(db.dirty) + list(db.deleted)
     for obj in objects:
@@ -116,6 +118,10 @@ def validate_writes(db, flush_context, instances):
         for column in MEMBER_REFERENCES.get(obj.__tablename__, ()):
             value = getattr(obj, column)
             if value is not None and (obj in db.new or inspect(obj).attrs[column].history.has_changes()):
+                if isinstance(obj,AuditLog) and value==db.info.get("actor_id"):
+                    # The authenticated actor may have just removed their own
+                    # access. Preserve the audit with its retained historical FK.
+                    continue
                 require_member(db, value)
         if isinstance(obj, (Attachment, Notification)):
             entity = obj.entity if isinstance(obj, Attachment) else obj.related_entity

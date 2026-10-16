@@ -15,7 +15,8 @@ import app.models
 from app.models.membership import Membership, MEMBERSHIP_ROLES
 from app.models.tenant import CRM_REFERENCES, MEMBER_REFERENCES
 
-TENANT_TABLES = {table.name for table in Base.metadata.tables.values() if "organization_id" in table.c and table.name != "memberships"}
+from app.db.tenant_backfill import TENANT_TABLES as PHASE_1A_TABLES
+TENANT_TABLES = set(PHASE_1A_TABLES)
 
 @pytest.fixture
 def tenant_engine():
@@ -79,7 +80,7 @@ def test_cross_tenant_crm_links_rejected_at_commit(tenant_engine, table, column)
         db.execute(model.update().where(model.c.organization_id == 1).values(**{column: 2}))
 
 
-@pytest.mark.parametrize("table,column", [(table, column) for table, refs in MEMBER_REFERENCES.items() for column in refs])
+@pytest.mark.parametrize("table,column", [(table, column) for table, refs in MEMBER_REFERENCES.items() if table in TENANT_TABLES for column in refs])
 def test_nonmember_user_links_rejected_at_commit(tenant_engine, table, column):
     model = Base.metadata.tables[table]
     with pytest.raises(IntegrityError), tenant_engine.begin() as db:

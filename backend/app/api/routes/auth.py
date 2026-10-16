@@ -3,7 +3,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr, field_validator
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, func
 from app.api.deps import SessionDep, CurrentActiveUser, CurrentUser, active_membership, TenantUser
 from app.core.config import settings
 from app.core.security import verify_password, create_access_token
@@ -36,6 +36,30 @@ def linked_user(db, identity):
     if not identity.get("id"):
         raise HTTPException(401,"Invalid provider identity")
     user=db.scalar(select(User).where(User.auth_user_id==identity.get("id")))
+    if not user and identity.get("email_confirmed_at") and identity.get("email"):
+        from app.models.invitation import OrganizationInvitation
+        from app.core.sessions import utcnow
+        from app.core.security import hash_password
+        import secrets
+        invitation=db.connection().execute(select(OrganizationInvitation.__table__).where(
+            OrganizationInvitation.email==identity["email"].lower(),
+            OrganizationInvitation.provider_user_id==identity["id"],
+            OrganizationInvitation.status=="pending",OrganizationInvitation.expires_at>utcnow())).mappings().first()
+        if invitation:
+            candidates=db.scalars(select(User).where(func.lower(User.email)==identity["email"].lower()).with_for_update()).all()
+            if len(candidates)>1:raise HTTPException(409,"Ambiguous account email requires review")
+            user=candidates[0] if candidates else None
+            if user and user.auth_user_id not in {None,identity["id"]}:
+                raise HTTPException(401,"Provider identity does not match the existing account")
+            if not user:
+                role=db.scalar(select(Role).where(Role.name=="viewer"))
+                if not role:raise HTTPException(503,"Workspace roles are not initialized")
+                user=User(name=invitation["name"],email=identity["email"].lower(),auth_user_id=identity["id"],
+                    password_hash=hash_password(secrets.token_urlsafe(40)),role_id=role.id,is_active=True)
+                db.add(user)
+            elif user.is_active:
+                user.auth_user_id=identity["id"]
+            db.commit()
     if not user or not user.is_active or not identity.get("email_confirmed_at"):
         raise HTTPException(401,"This account is not active in this workspace. Contact your administrator.")
     return user
@@ -144,12 +168,13 @@ def forgot(body:EmailRequest,db:SessionDep,request:Request):
 @router.post("/recovery/verify")
 def recovery(body:RecoveryVerify,db:SessionDep,request:Request,response:Response):
     limit_auth(db,request,"recovery-link","verify")
-    if settings.AUTH_PROVIDER!="supabase" or body.type not in {"recovery","invite"}:
+    if settings.AUTH_PROVIDER!="supabase" or body.type not in {"recovery","invite","magiclink","email"}:
         raise HTTPException(400,"Invalid recovery link")
     data=auth_request("POST","/verify",{"token_hash":body.token_hash,"type":body.type})
     user=linked_user(db,data.get("user",{}))
-    create_session(db,response,user,provider=data,recovery=True)
-    return {"message":"Link verified. Set a new password."}
+    recovery=body.type in {"recovery","invite"}
+    create_session(db,response,user,provider=data,recovery=recovery)
+    return {"message":"Link verified.","recovery":recovery}
 
 @router.post("/password")
 def change_password(body:PasswordChange,db:SessionDep,request:Request,response:Response,current_user:CurrentUser):

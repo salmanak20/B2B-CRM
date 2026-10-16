@@ -66,6 +66,8 @@ def ensure_can_modify_task(task: Task, current_user: User) -> None:
 def resolve_assigned_to_id(db: SessionDep, current_user: CurrentActiveUser, requested_user_id: int | None) -> int | None:
     if requested_user_id is None:
         return None
+    from app.api.ownership import validate_representative
+    validate_representative(db,current_user,requested_user_id)
     user = get_user_by_id(db, requested_user_id)
     if not user:
         raise HTTPException(status_code=400, detail="Assigned user does not exist")

@@ -24,6 +24,7 @@ class Membership(Base):
     role: Mapped[str] = mapped_column(String(50), nullable=False)
     permission_role_name: Mapped[str] = mapped_column(ForeignKey("roles.name"), nullable=False, default=permission_role_default)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
+    removed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     organization: Mapped["Organization"] = relationship(back_populates="memberships")
     user: Mapped["User"] = relationship()

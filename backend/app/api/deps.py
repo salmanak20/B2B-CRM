@@ -33,6 +33,10 @@ class TenantUser:
         return self.membership.organization_id
 
     @property
+    def organization_role(self):
+        return self.membership.role
+
+    @property
     def is_active(self):
         return self.user.is_active and self.membership.is_active
 
@@ -42,7 +46,7 @@ class TenantUser:
 
 def active_membership(db, user_id, org_id):
     member = db.scalar(select(Membership).where(Membership.user_id == user_id,
-        Membership.organization_id == org_id, Membership.is_active.is_(True)).execution_options(populate_existing=True))
+        Membership.organization_id == org_id, Membership.is_active.is_(True),Membership.removed_at.is_(None)).execution_options(populate_existing=True))
     if not member:
         raise HTTPException(403, "Active organization membership is required")
     return member

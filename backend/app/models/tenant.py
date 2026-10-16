@@ -14,6 +14,7 @@ CRM_REFERENCES = {
     "notification_events": {"task_id": "tasks"},
 }
 MEMBER_REFERENCES = {
+    "organization_invitations": ("invited_by",),
     "companies": ("owner_id",), "contacts": ("owner_id",), "leads": ("owner_id",),
     "deals": ("owner_id",), "tasks": ("owner_id", "assigned_to_id"),
     "activities": ("user_id",), "notifications": ("user_id",),
