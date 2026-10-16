@@ -1,0 +1,57 @@
+"""Test Phase 1A in a fresh disposable localhost PostgreSQL cluster only."""
+import os
+from pathlib import Path
+import secrets
+import socket
+import subprocess
+import sys
+import tempfile
+from urllib.parse import quote
+
+ROOT = Path(__file__).resolve().parents[1]
+BIN = Path(os.environ.get("CRM_TEST_PG_BIN", r"C:\Program Files\PostgreSQL\18\bin"))
+
+
+def main():
+    password = secrets.token_urlsafe(32)
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        port = listener.getsockname()[1]
+    env = {key: value for key, value in os.environ.items() if not key.startswith("PG") and key not in {"DATABASE_URL", "CRM_TEST_DATABASE_URL", "CRM_TEST_MIGRATION_URL"}}
+    env.update(PGHOST="127.0.0.1", PGPORT=str(port), PGUSER="crm_test", PGPASSWORD=password, PGDATABASE="postgres",
+               DATABASE_URL=f"postgresql+psycopg://crm_test:{quote(password)}@127.0.0.1:{port}/crm_test_phase1a",
+               JWT_SECRET_KEY=secrets.token_urlsafe(48), ENVIRONMENT="development", AUTH_PROVIDER="legacy",
+               DEBUG="false", DUE_NOTIFICATIONS_ENABLED="false", ALLOW_SELF_REGISTRATION="true", CRM_TEST_RUN="1", PYTHONDONTWRITEBYTECODE="1")
+    env["CRM_TEST_MIGRATION_URL"] = env["DATABASE_URL"]
+    with tempfile.TemporaryDirectory(prefix="crm-phase1a-") as temporary:
+        scratch = Path(temporary)
+        data = scratch / "data"
+        def run(args):
+            options = dict(cwd=ROOT / "backend", env=env, text=True,
+                           creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+            # PostgreSQL daemon must not inherit a captured pipe handle on Windows.
+            with tempfile.TemporaryFile(mode="w+") as output:
+                result = subprocess.run([str(arg) for arg in args], stdout=output, stderr=output, **options)
+                output.seek(0)
+                message = output.read().replace(password, "[REDACTED]")
+            if result.returncode:
+                print(message[-16000:])
+                raise RuntimeError(f"Isolated QA failed: {Path(str(args[0])).name}")
+            return message
+        pwfile = scratch / "password"
+        pwfile.write_text(password + "\n", encoding="utf-8")
+        run([BIN / "initdb.exe", "-D", data, "-U", "crm_test", "-A", "scram-sha-256", "--pwfile=" + str(pwfile), "--encoding=UTF8"])
+        pwfile.unlink()
+        started = False
+        try:
+            run([BIN / "pg_ctl.exe", "-D", data, "-l", scratch / "server.log", "-o", f"-h 127.0.0.1 -p {port}", "-w", "start"])
+            started = True
+            run([BIN / "createdb.exe", "crm_test_phase1a"])
+            print(run([sys.executable, "-B", "-m", "pytest", "-q", "tests/test_tenant_foundation.py", "tests/test_auth.py", "--disable-warnings"]))
+        finally:
+            if started:
+                run([BIN / "pg_ctl.exe", "-D", data, "-w", "stop", "-m", "fast"])
+
+
+if __name__ == "__main__":
+    main()

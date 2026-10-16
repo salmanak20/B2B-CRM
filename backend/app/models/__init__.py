@@ -15,3 +15,6 @@ from app.models.audit_log import AuditLog
 from app.models.session import AuthSession, RateBucket
 from app.models.workspace import WorkspaceSettings, WorkflowRule, WorkflowRun, Attachment
 from app.models.notification_event import NotificationEvent
+
+from app.models.organization import Organization
+from app.models.membership import Membership

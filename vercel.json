@@ -1,5 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "git": {
+    "deploymentEnabled": {
+      "feature/multi-tenant-saas": false
+    }
+  },
   "services": {
     "frontend": {
       "root": "stitch_crm_pro_enterprise_suite",
