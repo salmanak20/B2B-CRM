@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     RATE_WINDOW_SECONDS: int = 900
     DUE_NOTIFICATIONS_ENABLED: bool = False
     TENANT_ISOLATION_ENABLED: bool = False
+    BUSINESS_REGISTRATION_ENABLED: bool = False
+    AUTH_EMAIL_CONFIGURATION_VERIFIED: bool = False
 
     @model_validator(mode="after")
     def production_safety(self):

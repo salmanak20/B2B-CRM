@@ -1,5 +1,13 @@
 import {apiGet,apiPost} from './api.js';
 import {field,modal} from './ui.js';
+export async function createWorkspace(){
+  await apiGet('/auth/onboarding');
+  const key=sessionStorage.getItem('workspace-request-key')||crypto.randomUUID();
+  sessionStorage.setItem('workspace-request-key',key);
+  modal({id:'business-onboarding-modal',title:'Create your business workspace',save:'Create Workspace',body:
+    '<p class="subtle field full">Your private workspace starts empty. Invite your team after setup.</p>'+field('name','Business name','text','',{required:true,full:true}),
+    onSave:async values=>{await apiPost('/auth/onboarding',{name:values.name.trim(),request_key:key});sessionStorage.removeItem('workspace-request-key');location.assign('/dashboard');}});
+}
 export async function enterWorkspace(){
   const invitations=await apiGet('/auth/invitations');
   if(invitations.length){
@@ -13,6 +21,7 @@ export async function enterWorkspace(){
       field('organization_id','Organization','select',choices[0].id,{required:true,choices:choices.map(o=>[o.id,o.name])}),
       onSave:async values=>{await apiPost('/auth/organization',{organization_id:Number(values.organization_id)});location.assign('/dashboard');}});return;
   }
-  if(!choices.length)throw new Error('No active organization access. Ask your administrator for an invitation.');
+  if(!choices.length){await createWorkspace();return;}
+  await apiPost('/auth/organization',{organization_id:choices[0].id});
   location.assign('/dashboard');
 }

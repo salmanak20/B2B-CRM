@@ -2,7 +2,8 @@ from datetime import timedelta
 from urllib.parse import quote
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.security import OAuth2PasswordRequestForm
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from uuid import UUID
 from sqlalchemy import select, delete, func
 from app.api.deps import SessionDep, CurrentActiveUser, CurrentUser, active_membership, TenantUser
 from app.core.config import settings
@@ -17,6 +18,7 @@ from app.models.user import User
 from app.models.session import AuthSession
 from app.schemas.auth import UserRegister
 from app.schemas.user import UserResponse
+from app.services.onboarding import registration_enabled, remember_signup, signup_identity, verified_creator, create_workspace
 
 router=APIRouter(prefix="/auth",tags=["auth"])
 
@@ -45,16 +47,19 @@ def linked_user(db, identity):
             OrganizationInvitation.email==identity["email"].lower(),
             OrganizationInvitation.provider_user_id==identity["id"],
             OrganizationInvitation.status=="pending",OrganizationInvitation.expires_at>utcnow())).mappings().first()
-        if invitation:
+        signup = signup_identity(db, identity) if not invitation else None
+        if invitation or signup:
             candidates=db.scalars(select(User).where(func.lower(User.email)==identity["email"].lower()).with_for_update()).all()
             if len(candidates)>1:raise HTTPException(409,"Ambiguous account email requires review")
             user=candidates[0] if candidates else None
             if user and user.auth_user_id not in {None,identity["id"]}:
                 raise HTTPException(401,"Provider identity does not match the existing account")
+            if user and signup:
+                raise HTTPException(409,"Existing accounts must sign in or use an administrator invitation")
             if not user:
                 role=db.scalar(select(Role).where(Role.name=="viewer"))
                 if not role:raise HTTPException(503,"Workspace roles are not initialized")
-                user=User(name=invitation["name"],email=identity["email"].lower(),auth_user_id=identity["id"],
+                user=User(name=(invitation or signup)["name"],email=identity["email"].lower(),auth_user_id=identity["id"],
                     password_hash=hash_password(secrets.token_urlsafe(40)),role_id=role.id,is_active=True)
                 db.add(user)
             elif user.is_active:
@@ -67,7 +72,44 @@ def linked_user(db, identity):
 @router.get("/config")
 def auth_config():
     return {"provider":settings.AUTH_PROVIDER,"recovery_available":settings.AUTH_PROVIDER=="supabase",
-            "session_hours":settings.SESSION_HOURS,"remember_days":settings.REMEMBER_DAYS,"sso_available":False}
+            "session_hours":settings.SESSION_HOURS,"remember_days":settings.REMEMBER_DAYS,"sso_available":False,
+            "business_registration_enabled":registration_enabled()}
+
+class BusinessSignup(UserRegister):
+    model_config = ConfigDict(extra="forbid")
+
+@router.post("/business-signup")
+def business_signup(body:BusinessSignup,db:SessionDep,request:Request):
+    if not registration_enabled():
+        raise HTTPException(403,"Business registration is unavailable")
+    email=str(body.email).lower()
+    limit_auth(db,request,email,"business-signup")
+    # Preserve all existing account links, roles and invitations; do not reveal
+    # whether an account exists through this public response.
+    existing=db.scalar(select(User.id).where(func.lower(User.email)==email))
+    if not existing:
+        data=auth_request("POST","/signup?redirect_to="+quote(settings.FRONTEND_URL.rstrip('/')+"/login",safe=""),
+            {"email":email,"password":body.password})
+        if data.get("access_token") or data.get("session"):
+            raise HTTPException(503,"Enable email confirmation in the identity provider before registration")
+        remember_signup(db,data.get("user",data),body.name,email)
+    return {"message":"Check your email to verify your account, then sign in. Existing accounts can sign in normally."}
+
+class BusinessDetails(BaseModel):
+    model_config = ConfigDict(extra="forbid",str_strip_whitespace=True)
+    name: str = Field(min_length=1,max_length=100)
+    request_key: UUID
+
+@router.get("/onboarding")
+def onboarding_status(db:SessionDep,request:Request,current_user:CurrentUser):
+    verified_creator(db,request,current_user)
+    return {"can_create":True}
+
+@router.post("/onboarding")
+def provision_business(body:BusinessDetails,db:SessionDep,request:Request,current_user:CurrentUser):
+    session=verified_creator(db,request,current_user)
+    limit_auth(db,request,current_user.email,"provision-business")
+    return create_workspace(db,current_user,session,body.name,str(body.request_key))
 
 @router.post("/register",response_model=UserResponse)
 def register(user_in:UserRegister,db:SessionDep,request:Request):
@@ -124,7 +166,7 @@ def organizations(db:SessionDep,current_user:CurrentUser):
     if not settings.TENANT_ISOLATION_ENABLED or not current_user.is_active:
         raise HTTPException(403,"Organization selection is unavailable")
     return [{"id":o.id,"name":o.name} for o in db.scalars(select(Organization).join(Membership).where(
-        Membership.user_id==current_user.id,Membership.is_active.is_(True))).all()]
+        Membership.user_id==current_user.id,Membership.is_active.is_(True),Membership.removed_at.is_(None))).all()]
 
 @router.post("/organization")
 def select_organization(body:OrganizationSelection,db:SessionDep,request:Request,current_user:CurrentUser):
@@ -168,7 +210,7 @@ def forgot(body:EmailRequest,db:SessionDep,request:Request):
 @router.post("/recovery/verify")
 def recovery(body:RecoveryVerify,db:SessionDep,request:Request,response:Response):
     limit_auth(db,request,"recovery-link","verify")
-    if settings.AUTH_PROVIDER!="supabase" or body.type not in {"recovery","invite","magiclink","email"}:
+    if settings.AUTH_PROVIDER!="supabase" or body.type not in {"recovery","invite","magiclink","email","signup"}:
         raise HTTPException(400,"Invalid recovery link")
     data=auth_request("POST","/verify",{"token_hash":body.token_hash,"type":body.type})
     user=linked_user(db,data.get("user",{}))

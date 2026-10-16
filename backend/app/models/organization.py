@@ -1,4 +1,4 @@
-"""Organizations are provisioned only after an approved legacy mapping."""
+"""Workspaces created by verified business owners or an approved legacy mapping."""
 from datetime import datetime
 from sqlalchemy import DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship

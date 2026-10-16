@@ -19,3 +19,4 @@ from app.models.notification_event import NotificationEvent
 from app.models.organization import Organization
 from app.models.membership import Membership
 from app.models.invitation import OrganizationInvitation
+from app.models.onboarding import SignupIntent, OrganizationProvision

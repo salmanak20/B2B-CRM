@@ -18,6 +18,7 @@ def main():
     parser.add_argument("--backfill", action="store_true", help="Run only Phase 1B PostgreSQL tests")
     parser.add_argument("--isolation", action="store_true", help="Run only Phase 2 tenant isolation tests")
     parser.add_argument("--team", action="store_true", help="Run Phase 3 PostgreSQL team tests")
+    parser.add_argument("--onboarding", action="store_true", help="Run Phase 4 PostgreSQL onboarding tests")
     args = parser.parse_args()
     password = secrets.token_urlsafe(32)
     with socket.socket() as listener:
@@ -55,6 +56,7 @@ def main():
             run([BIN / "createdb.exe", "crm_test_phase1a"])
             tests = ["tests/test_tenant_isolation.py"] if args.isolation else (["tests/test_tenant_backfill.py"] if args.backfill else ["tests/test_tenant_foundation.py", "tests/test_auth.py"])
             if args.team: tests=["tests/test_organization_team.py"]
+            if args.onboarding: tests=["tests/test_business_onboarding.py"]
             print(run([sys.executable, "-B", "-m", "pytest", "-q", *tests, "--disable-warnings"]))
         finally:
             if started:
