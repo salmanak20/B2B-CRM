@@ -31,3 +31,7 @@ class Subscription(Base):
     enforcement_enabled:Mapped[bool]=mapped_column(Boolean,nullable=False,default=False)
     external_customer_id:Mapped[str|None]=mapped_column(String(255),nullable=True)
     external_subscription_id:Mapped[str|None]=mapped_column(String(255),nullable=True,unique=True)
+    provider_status:Mapped[str|None]=mapped_column(String(30),nullable=True)
+    provider_updated_at:Mapped[datetime|None]=mapped_column(DateTime(timezone=True),nullable=True)
+    provider_order_id:Mapped[str|None]=mapped_column(String(30),nullable=True,index=True)
+    past_due_since:Mapped[datetime|None]=mapped_column(DateTime(timezone=True),nullable=True)

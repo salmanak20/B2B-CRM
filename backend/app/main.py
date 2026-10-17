@@ -90,7 +90,8 @@ async def validation_error(request:Request,error:RequestValidationError):
     # Do not echo submitted passwords, recovery tokens or business values in errors.
     return JSONResponse({"detail":[{"loc":e["loc"],"msg":e["msg"],"type":e["type"]} for e in error.errors()]},status_code=422)
 
-from app.api.routes import platform, subscriptions
+from app.api.routes import platform, subscriptions, billing
+app.include_router(billing.router, prefix='/api/v1')
 app.include_router(subscriptions.router, prefix='/api/v1')
 app.include_router(platform.router, prefix='/api/v1')
 

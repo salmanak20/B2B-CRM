@@ -48,7 +48,8 @@ def summary(db,org):
     sub=current(db,org);active,pending=usage(db,org)
     plan=db.get(SubscriptionPlan,sub.plan_id) if sub else None
     enforced=bool(sub and sub.enforcement_enabled)
-    return {'plan':plan_data(plan) if plan else None,'subscription':{k:getattr(sub,k) for k in ('status','starts_at','ends_at','enforcement_enabled')} if sub else None,
+    from app.services.lemon_squeezy import available
+    return {'can_manage_billing':False,'provider_status':sub.provider_status if sub else None,'test_billing_available':available(),'plan':plan_data(plan) if plan else None,'subscription':{k:getattr(sub,k) for k in ('status','starts_at','ends_at','enforcement_enabled')} if sub else None,
         'seats':{'active':active,'pending':pending,'limit':plan.seat_limit if enforced else None},
         'entitlements':{f:(not enforced or (live(sub) and plan.entitlements.get(f,False))) for f in FEATURES},'billing_available':False}
 
@@ -57,7 +58,8 @@ def plans(db:SessionDep,user:CurrentActiveUser):
     return [plan_data(p) for p in db.scalars(select(SubscriptionPlan).where(SubscriptionPlan.published.is_(True)).order_by(SubscriptionPlan.id))]
 
 @router.get('/subscription')
-def subscription(db:SessionDep,user:CurrentActiveUser):return summary(db,user.organization_id)
+def subscription(db:SessionDep,user:CurrentActiveUser):
+    result=summary(db,user.organization_id);result['can_manage_billing']=user.organization_role=='owner';return result
 
 @router.get('/platform/plans')
 def platform_plans(db:SessionDep,admin:Admin):return [plan_data(p) for p in db.scalars(select(SubscriptionPlan).order_by(SubscriptionPlan.id))]
@@ -91,6 +93,7 @@ def configure_subscription(org_id:int,body:SubscriptionInput,db:SessionDep,admin
     if body.enforcement_enabled:validate_capacity(db,org_id,plan.seat_limit)
     sub=current(db,org_id)
     if not sub:sub=Subscription(organization_id=org_id);db.add(sub)
+    if sub.provider_status is not None:raise HTTPException(409,'Provider-managed subscriptions must be reconciled from verified provider state')
     for key,value in body.model_dump(exclude={'reason'}).items():setattr(sub,key,value)
     db.flush();audit(db,admin.id,'subscription_configured',org_id,body.reason);db.commit()
     return summary(db,org_id)

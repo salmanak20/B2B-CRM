@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import model_validator
+from pydantic import model_validator,Field
 from pathlib import Path
 
 class Settings(BaseSettings):
@@ -32,6 +32,12 @@ class Settings(BaseSettings):
     TENANT_ISOLATION_ENABLED: bool = False
     BUSINESS_REGISTRATION_ENABLED: bool = False
     AUTH_EMAIL_CONFIGURATION_VERIFIED: bool = False
+    LEMON_SQUEEZY_TEST_ENABLED: bool = False
+    LEMON_SQUEEZY_TEST_API_KEY: str = ''
+    LEMON_SQUEEZY_TEST_STORE_ID: str = ''
+    LEMON_SQUEEZY_TEST_WEBHOOK_SECRET: str = ''
+    LEMON_SQUEEZY_TEST_PLAN_IDS: dict[str,dict[str,str]] = {}
+    LEMON_SQUEEZY_GRACE_DAYS: int = Field(7,ge=0,le=30)
 
     @model_validator(mode="after")
     def production_safety(self):
@@ -55,7 +61,8 @@ class Settings(BaseSettings):
         env_file=str(Path(__file__).resolve().parents[2]/".env"),
         env_file_encoding="utf-8",
         case_sensitive=True,
-        hide_input_in_errors=True
+        hide_input_in_errors=True,
+        env_ignore_empty=True
     )
 
 settings = Settings()
