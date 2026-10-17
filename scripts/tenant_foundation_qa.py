@@ -22,6 +22,7 @@ def main():
     parser.add_argument("--platform", action="store_true")
     parser.add_argument("--subscriptions", action="store_true")
     parser.add_argument("--billing", action="store_true")
+    parser.add_argument("--integration", action="store_true", help="Run cross-phase integration and migration recovery tests")
     args = parser.parse_args()
     password = secrets.token_urlsafe(32)
     with socket.socket() as listener:
@@ -32,6 +33,11 @@ def main():
                DATABASE_URL=f"postgresql+psycopg://crm_test:{quote(password)}@127.0.0.1:{port}/crm_test_phase1a",
                JWT_SECRET_KEY=secrets.token_urlsafe(48), ENVIRONMENT="development", AUTH_PROVIDER="legacy",
                DEBUG="false", DUE_NOTIFICATIONS_ENABLED="false", ALLOW_SELF_REGISTRATION="true", CRM_TEST_RUN="1", PYTHONDONTWRITEBYTECODE="1")
+    # Nonempty sentinels prevent pydantic's env_ignore_empty from falling back
+    # to developer/production credentials in backend/.env. Providers are mocked.
+    env.update(SUPABASE_URL="https://supabase.invalid", SUPABASE_PUBLISHABLE_KEY="isolated-fixture", SUPABASE_SERVICE_ROLE_KEY="isolated-fixture",
+               LEMON_SQUEEZY_TEST_ENABLED="false", LEMON_SQUEEZY_TEST_API_KEY="isolated-fixture", LEMON_SQUEEZY_TEST_WEBHOOK_SECRET="isolated-fixture",
+               LEMON_SQUEEZY_TEST_STORE_ID="isolated-fixture", LEMON_SQUEEZY_TEST_PLAN_IDS="{}")
     env["CRM_TEST_MIGRATION_URL"] = env["DATABASE_URL"]
     with tempfile.TemporaryDirectory(prefix="crm-phase1a-") as temporary:
         scratch = Path(temporary)
@@ -62,6 +68,7 @@ def main():
             if args.platform: tests=["tests/test_platform_admin.py"]
             if args.subscriptions: tests=["tests/test_subscriptions.py"]
             if args.billing: tests=["tests/test_lemon_billing.py"]
+            if args.integration: tests=["tests/test_saas_integration.py"]
             if args.onboarding: tests=["tests/test_business_onboarding.py"]
             print(run([sys.executable, "-B", "-m", "pytest", "-q", *tests, "--disable-warnings"]))
         finally:
