@@ -100,6 +100,8 @@ def accept(invitation_id:int,db:SessionDep,user:CurrentUser):
         raise HTTPException(409,"Invitation authority has changed; request a new invitation")
     member=db.scalar(select(Membership).where(Membership.organization_id==row.organization_id,Membership.user_id==user.id))
     if member and member.is_active and not member.removed_at:raise HTTPException(409,"Already an active member")
+    from app.services.subscriptions import check_seat
+    check_seat(db,row.organization_id,exclude_invitation=row.id)
     if not member:
         member=Membership(organization_id=row.organization_id,user_id=user.id,role=row.role,is_active=True)
         db.add(member)

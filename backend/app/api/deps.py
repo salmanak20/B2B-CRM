@@ -124,7 +124,10 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 def get_current_active_user(current_user: CurrentUser, db: SessionDep, request: Request) -> User:
     if not current_user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Inactive user")
-    return resolve_tenant(db, current_user, request)
+    principal=resolve_tenant(db, current_user, request)
+    from app.services.subscriptions import request_feature
+    request_feature(db,principal.organization_id,request.url.path)
+    return principal
 
 CurrentActiveUser = Annotated[User, Depends(get_current_active_user)]
 

@@ -15,6 +15,10 @@
       "trailingSlash": false,
       "rewrites": [
         {
+          "source": "/subscription",
+          "destination": "/subscription_crm_pro/code.html"
+        },
+        {
           "source": "/platform-admin",
           "destination": "/platform_admin_crm_pro/code.html"
         },

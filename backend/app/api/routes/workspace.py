@@ -153,6 +153,9 @@ def delete_rule(rule_id:int,db:SessionDep,current_user:CurrentActiveUser):
     return {"ok":True}
 
 def run_lead_workflows(db,lead):
+    from app.services.subscriptions import feature_allowed
+    from app.db.tenant_session import organization_id
+    if not feature_allowed(db,organization_id(db),'workflows'):return
     for rule in db.scalars(select(WorkflowRule).where(WorkflowRule.enabled.is_(True),WorkflowRule.trigger_status==lead.status)).all():
         if Decimal(lead.estimated_value or 0)<rule.min_value:continue
         if db.scalar(select(WorkflowRun).where(WorkflowRun.rule_id==rule.id,WorkflowRun.lead_id==lead.id)):continue

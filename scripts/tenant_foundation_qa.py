@@ -20,6 +20,7 @@ def main():
     parser.add_argument("--team", action="store_true", help="Run Phase 3 PostgreSQL team tests")
     parser.add_argument("--onboarding", action="store_true", help="Run Phase 4 PostgreSQL onboarding tests")
     parser.add_argument("--platform", action="store_true")
+    parser.add_argument("--subscriptions", action="store_true")
     args = parser.parse_args()
     password = secrets.token_urlsafe(32)
     with socket.socket() as listener:
@@ -58,6 +59,7 @@ def main():
             tests = ["tests/test_tenant_isolation.py"] if args.isolation else (["tests/test_tenant_backfill.py"] if args.backfill else ["tests/test_tenant_foundation.py", "tests/test_auth.py"])
             if args.team: tests=["tests/test_organization_team.py"]
             if args.platform: tests=["tests/test_platform_admin.py"]
+            if args.subscriptions: tests=["tests/test_subscriptions.py"]
             if args.onboarding: tests=["tests/test_business_onboarding.py"]
             print(run([sys.executable, "-B", "-m", "pytest", "-q", *tests, "--disable-warnings"]))
         finally:

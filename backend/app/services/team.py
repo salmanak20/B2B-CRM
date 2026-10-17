@@ -42,6 +42,9 @@ def change_member(db,actor,user_id,*,role=None,is_active=None,remove=False):
             Membership.is_active.is_(True),Membership.removed_at.is_(None),User.is_active.is_(True)))
         if count<=1:
             raise HTTPException(409,"The final active owner cannot lose ownership or access")
+    if is_active is True and not target.is_active:
+        from app.services.subscriptions import check_seat
+        check_seat(db,organization_id(db))
     prior_role=target.role
     if role is not None:
         target.role=role
@@ -107,6 +110,8 @@ def invite(db,actor,name,email,role):
     now=datetime.now(timezone.utc)
     if row and row.status=="pending" and row.expires_at>now:
         raise HTTPException(409,"An invitation is already pending")
+    from app.services.subscriptions import check_seat
+    check_seat(db,organization_id(db))
     provider_id=send_invitation(email,name,existing)
     if not row:
         row=OrganizationInvitation(email=email,name=name,role=role,invited_by=actor.id,
