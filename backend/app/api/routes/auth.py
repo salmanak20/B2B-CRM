@@ -156,6 +156,15 @@ def login(db:SessionDep,request:Request,response:Response,form:OAuth2PasswordReq
 def me(current_user:CurrentActiveUser):
     return current_user
 
+@router.get('/platform-access')
+def platform_access(db:SessionDep,request:Request,current_user:CurrentUser):
+    from app.services.platform import authorize
+    try:authorize(db,request,current_user)
+    except HTTPException as error:
+        if error.status_code!=403:raise
+        return {'is_platform_admin':False}
+    return {'is_platform_admin':True}
+
 class OrganizationSelection(BaseModel):
     organization_id: int
 
@@ -166,7 +175,7 @@ def organizations(db:SessionDep,current_user:CurrentUser):
     if not settings.TENANT_ISOLATION_ENABLED or not current_user.is_active:
         raise HTTPException(403,"Organization selection is unavailable")
     return [{"id":o.id,"name":o.name} for o in db.scalars(select(Organization).join(Membership).where(
-        Membership.user_id==current_user.id,Membership.is_active.is_(True),Membership.removed_at.is_(None))).all()]
+        Membership.user_id==current_user.id,Membership.is_active.is_(True),Membership.removed_at.is_(None),Organization.is_suspended.is_(False))).all()]
 
 @router.post("/organization")
 def select_organization(body:OrganizationSelection,db:SessionDep,request:Request,current_user:CurrentUser):

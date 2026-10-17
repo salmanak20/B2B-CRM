@@ -10,6 +10,9 @@ def organization_id(db):
     value = db.info.get("organization_id")
     if not isinstance(value, int) or value <= 0:
         raise HTTPException(403, "Active organization membership is required")
+    from app.models.organization import Organization
+    suspended=db.connection().execute(select(Organization.__table__.c.is_suspended).where(Organization.__table__.c.id==value)).scalar_one_or_none()
+    if suspended is not False:raise HTTPException(403,"Business workspace is suspended or unavailable")
     return value
 
 
@@ -57,6 +60,7 @@ def scope_queries(state):
         raise HTTPException(403, "Tenant queries must use mapped models")
     if not org:
         return
+    organization_id(state.session)
     from app.db.session import Base
     for mapped in Base.registry.mappers:
         model=mapped.class_

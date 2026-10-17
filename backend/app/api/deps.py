@@ -45,6 +45,9 @@ class TenantUser:
 
 
 def active_membership(db, user_id, org_id):
+    from app.models.organization import Organization
+    org=db.get(Organization,org_id,populate_existing=True)
+    if not org or org.is_suspended:raise HTTPException(403,"Business workspace is suspended or unavailable")
     member = db.scalar(select(Membership).where(Membership.user_id == user_id,
         Membership.organization_id == org_id, Membership.is_active.is_(True),Membership.removed_at.is_(None)).execution_options(populate_existing=True))
     if not member:

@@ -41,7 +41,7 @@ def tick():
     if not settings.TENANT_ISOLATION_ENABLED:
         return
     with SessionLocal() as db:
-        organizations=list(db.scalars(select(Organization.id)))
+        organizations=list(db.scalars(select(Organization.id).where(Organization.is_suspended.is_(False))))
         db.execute(delete(AuthSession).where(AuthSession.expires_at<datetime.now(timezone.utc)))
         db.execute(delete(RateBucket).where(RateBucket.window_start<datetime.now(timezone.utc)-timedelta(days=2)))
         db.commit()

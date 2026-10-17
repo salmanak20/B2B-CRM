@@ -9,6 +9,8 @@ export async function createWorkspace(){
     onSave:async values=>{await apiPost('/auth/onboarding',{name:values.name.trim(),request_key:key});sessionStorage.removeItem('workspace-request-key');location.assign('/dashboard');}});
 }
 export async function enterWorkspace(){
+  const platform=await apiGet('/auth/platform-access');
+  if(platform?.is_platform_admin&&!new URLSearchParams(location.search).has('workspace')){location.assign('/platform-admin');return;}
   const invitations=await apiGet('/auth/invitations');
   if(invitations.length){
     modal({id:'accept-invitation-modal',title:'Organization invitations',save:'Accept Invitation',body:

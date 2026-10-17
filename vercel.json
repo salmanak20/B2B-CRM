@@ -15,6 +15,10 @@
       "trailingSlash": false,
       "rewrites": [
         {
+          "source": "/platform-admin",
+          "destination": "/platform_admin_crm_pro/code.html"
+        },
+        {
           "source": "/login",
           "destination": "/crm_pro_enterprise/code.html"
         },
