@@ -19,6 +19,7 @@ from app.models.session import AuthSession
 from app.schemas.auth import UserRegister
 from app.schemas.user import UserResponse
 from app.services.onboarding import registration_enabled, remember_signup, signup_identity, verified_creator, create_workspace
+from app.core.email_recovery import start_recovery, save_recovery, read_recovery, clear_recovery
 
 router=APIRouter(prefix="/auth",tags=["auth"])
 
@@ -28,6 +29,10 @@ class EmailRequest(BaseModel):
 class RecoveryVerify(BaseModel):
     token_hash: str
     type: str = "recovery"
+
+class RecoveryCode(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    code: str = Field(min_length=1, max_length=2048)
 
 class PasswordChange(BaseModel):
     password: str
@@ -205,16 +210,36 @@ def logout(db:SessionDep,request:Request,response:Response):
     response.delete_cookie(settings.SESSION_COOKIE_NAME,path="/api",secure=settings.COOKIE_SECURE,httponly=True,samesite="lax")
 
 @router.post("/forgot-password")
-def forgot(body:EmailRequest,db:SessionDep,request:Request):
+def forgot(body:EmailRequest,db:SessionDep,request:Request,response:Response):
     limit_auth(db,request,body.email,"recovery")
     if settings.AUTH_PROVIDER!="supabase":
         raise HTTPException(503,"Account recovery requires the configured production identity provider")
+    challenge,state=start_recovery(str(body.email).lower())
     try:
-        auth_request("POST","/recover?redirect_to="+quote(settings.FRONTEND_URL.rstrip('/')+"/login",safe=""),{"email":str(body.email)})
+        auth_request("POST","/recover?redirect_to="+quote(settings.FRONTEND_URL.rstrip('/')+"/login",safe=""),
+            {"email":str(body.email),"code_challenge":challenge,"code_challenge_method":"s256"})
     except HTTPException as error:
         if error.status_code>=500 or error.status_code==429:
             raise
-    return {"message":"If this account exists, a recovery email will arrive shortly."}
+    save_recovery(response,state)
+    return {"message":"If this account exists, a recovery email will arrive shortly. Open its latest link in this same browser to set your password."}
+
+@router.post("/recovery/exchange")
+def exchange_recovery(body:RecoveryCode,db:SessionDep,request:Request,response:Response):
+    limit_auth(db,request,"recovery-code","verify")
+    if settings.AUTH_PROVIDER!="supabase":
+        raise HTTPException(400,"Invalid recovery link")
+    state=read_recovery(request)
+    # The provider validates the one-use code against the server-held verifier.
+    # No client-supplied token, role or callback type can grant recovery access.
+    data=auth_request("POST","/token?grant_type=pkce",{"auth_code":body.code,"code_verifier":state["verifier"]})
+    identity=data.get("user",{})
+    if str(identity.get("email","")).lower()!=state["email"]:
+        raise HTTPException(401,"Recovery account does not match the requested account")
+    user=linked_user(db,identity)
+    create_session(db,response,user,provider=data,recovery=True)
+    clear_recovery(response)
+    return {"message":"Link verified.","recovery":True}
 
 @router.post("/recovery/verify")
 def recovery(body:RecoveryVerify,db:SessionDep,request:Request,response:Response):

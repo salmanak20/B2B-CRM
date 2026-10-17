@@ -14,6 +14,16 @@ with `?token_hash={{ .TokenHash }}&type=signup`. Verify delivery, expiry and red
 with approved test accounts before requesting production activation. No deployment
 or production feature activation is part of this phase.
 
+Free staging may use Supabase's built-in mailer with explicitly approved team
+inboxes (currently two messages/hour); custom SMTP stays disabled. Default signup
+links verify email, then the user signs in with the password chosen at signup.
+Recovery uses PKCE with an encrypted, HttpOnly, one-hour browser cookie and a
+one-use provider code. Request the latest email through Forgot password and open
+it in the same browser/profile; Sign In does not create or change passwords.
+Old implicit recovery links must be replaced. A `token_hash` template remains
+supported, including for invitations; live invitations need a second approved
+inbox. Do not equate delivered email with a successful password-reset flow.
+
 The server validates provider email confirmation before workspace creation.
 Send a stable UUID `request_key` to `POST /auth/onboarding`; retries reuse the
 receipt, while changed details conflict. Fresh explicit requests can create
