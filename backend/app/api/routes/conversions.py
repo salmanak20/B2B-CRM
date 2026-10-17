@@ -39,6 +39,8 @@ def convert_lead(lead_id:int,body:ConvertLead,db:SessionDep,current_user:Current
         if not stage or stage.pipeline_id!=body.pipeline_id:
             raise HTTPException(422,"Choose a valid pipeline and stage")
     company=db.get(Company,body.company_id or lead.company_id) if (body.company_id or lead.company_id) else None
+    if body.company_id is not None and company is None:
+        raise HTTPException(422,"Choose a company in the active organization")
     if company:ensure_can_read_crm_record(company.owner_id,current_user)
     if not company:
         if not body.company_name:raise HTTPException(422,"Choose a company or enter a new company name")
@@ -46,6 +48,8 @@ def convert_lead(lead_id:int,body:ConvertLead,db:SessionDep,current_user:Current
         if not company:
             company=Company(name=body.company_name,owner_id=lead.owner_id);db.add(company);db.flush()
     contact=db.get(Contact,body.contact_id or lead.contact_id) if (body.contact_id or lead.contact_id) else None
+    if body.contact_id is not None and contact is None:
+        raise HTTPException(422,"Choose a contact in the active organization")
     if contact:
         ensure_can_read_crm_record(contact.owner_id,current_user)
         if contact.company_id!=company.id:raise HTTPException(422,"Contact belongs to another company")

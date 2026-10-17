@@ -13,8 +13,11 @@ test('profile settings persist after a fresh page request',async({page})=>{
   await authenticate(page);const name=unique('Profile');await page.goto('/settings');await page.getByLabel('Full Name',{exact:false}).fill(name);await page.getByLabel('Display Timezone',{exact:false}).fill('Asia/Karachi');await page.getByRole('button',{name:'Save Changes',exact:true}).click();await expect(page.locator('[data-user-name]')).toHaveText(name);await page.reload();await expect(page.getByLabel('Full Name',{exact:false})).toHaveValue(name);await expect(page.getByLabel('Display Timezone',{exact:false})).toHaveValue('Asia/Karachi');
 });
 
-test('administrator creates and deactivates a real account',async({page})=>{
-  await authenticate(page);const name=unique('Workspace colleague'),email=unique('colleague').replaceAll(' ','')+'@example.com';await page.goto('/users');await page.getByRole('button',{name:'Add User',exact:true}).click();await page.getByLabel('Full Name',{exact:false}).fill(name);await page.getByLabel('Email',{exact:false}).fill(email);await page.getByLabel('Initial Password',{exact:false}).fill(process.env.E2E_PASSWORD);await page.getByRole('button',{name:'Create User',exact:true}).click();const row=page.locator('tr').filter({hasText:email});await expect(row).toBeVisible();await row.getByRole('button',{name:'Edit user',exact:true}).click();await page.getByLabel('Status',{exact:true}).selectOption('false');await page.getByRole('button',{name:'Save User',exact:true}).click();await expect(row).toContainText('inactive');await page.reload();await expect(row).toContainText('inactive');
+test('administrator updates organization membership without replacing accounts',async({page})=>{
+  await authenticate(page);const members=await api(page,'GET','/team/members');const target=members.members.find(m=>m.email==='sales_manager@qa.example.com');
+  try{
+    await page.goto('/users');const row=page.locator('tr').filter({hasText:target.email});await row.getByRole('button',{name:'Change access',exact:true}).click();await page.getByLabel('Status',{exact:true}).selectOption('false');await page.getByRole('button',{name:'Save Access',exact:true}).click();await expect(row).toContainText('inactive');await page.reload();await expect(row).toContainText('inactive');
+  }finally{await api(page,'PUT',`/team/members/${target.user_id}`,{is_active:true});}
 });
 
 test('a saved workflow generates one task and a real readable notification',async({page})=>{
@@ -29,6 +32,6 @@ test('paging and sorting reach actual records after the first page',async({page}
   await authenticate(page);const prefix=unique('Paging');for(let i=0;i<12;i++)await company(page,prefix+' '+String(i).padStart(2,'0'));await page.goto('/companies');await page.locator('#search-companies').fill(prefix);await expect(page.locator('#pagination')).toContainText('of 12 records');await expect(page.locator('tbody tr')).toHaveCount(10);await page.getByRole('button',{name:'Next',exact:true}).click();await expect(page.locator('tbody tr')).toHaveCount(2);await expect(page.locator('#pagination')).toContainText('Showing 11–12 of 12');await page.locator('#sort-dir').selectOption('desc');await expect(page.locator('tbody tr').first()).toContainText(prefix+' 11');
 });
 
-test('new user sees zero metrics and an empty customer dataset',async({page})=>{
-  await authenticate(page);const roles=await api(page,'GET','/roles');const email=unique('fresh').replaceAll(' ','')+'@example.com';await api(page,'POST','/users',{name:'Fresh workspace user',email,password:process.env.E2E_PASSWORD,role_id:roles.find(r=>r.name==='sales_rep').id});await api(page,'POST','/auth/logout');const response=await page.request.post('/api/v1/auth/login',{form:{username:email,password:process.env.E2E_PASSWORD}});expect(response.ok()).toBe(true);await page.goto('/dashboard');await expect(page.locator('[data-kpi=total_companies]')).toHaveText('0');await expect(page.locator('[data-kpi=total_leads]')).toHaveText('0');await page.goto('/companies');await expect(page.getByRole('heading',{name:'No companies found',exact:true})).toBeVisible();
+test('unassigned representative sees zero own metrics and an empty permitted dataset',async({page})=>{
+  await authenticate(page,'fresh');await page.goto('/dashboard');await expect(page.locator('[data-kpi=total_companies]')).toHaveText('0');await expect(page.locator('[data-kpi=total_leads]')).toHaveText('0');await page.goto('/companies');await expect(page.getByRole('heading',{name:'No companies found',exact:true})).toBeVisible();
 });

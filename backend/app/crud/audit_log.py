@@ -30,6 +30,10 @@ def log_event(
     description: str = None, 
     ip_address: str = None
 ) -> AuditLog:
+    # Authentication may succeed before a multi-membership user selects a tenant.
+    # Do not write an unassigned CRM audit row or guess an organization.
+    if not db.info.get("organization_id"):
+        return None
     obj_in = AuditLogCreate(
         action=action,
         user_id=user_id,
