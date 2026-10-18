@@ -158,3 +158,74 @@ part of backup approval and needs its own reviewed write barrier/recovery decisi
 - [ ] Decide CAPTCHA/leaked-password protection and CI requirements; authorize
   any paid security option separately. No production change, deployment, main
   merge or Phase 7B work occurred.
+
+## Phase 7A.5 — approved public backup rehearsal (2026-10-18)
+
+The user explicitly approved read-only public CRM capture and local PG17 restore,
+including restriction of `backend/.backups` to the current Windows user and
+SYSTEM. Folder inheritance is disabled; all backup files' ACLs were verified.
+No production data was accessed before that approval in this phase.
+
+- A fresh public-only encrypted backup was created from production revision
+  `f8b3015a0001`, using the existing `app.db.safe_migrate --backup-only` path.
+  Source inventory and pg_dump shared an exported REPEATABLE READ / READ ONLY
+  snapshot; `default_transaction_read_only=on` also guarded source connections.
+  Encryption, SHA-256 and archive listing passed. No plaintext dump was saved.
+- Restore into disposable local PG17.11 matched all 22 original tables' complete
+  row fingerprints, column inventory and archive-declared constraints. Hashes
+  include original IDs, timestamps, ownership and business values; raw rows and
+  credentials were neither printed nor committed. Private evidence stays beside
+  the encrypted archive. Source extension metadata was recorded; the public
+  archive required no additional extensions. This does not validate restoration
+  of Supabase-managed extensions, Auth or Storage, which were excluded.
+- Only the disposable copy was upgraded from `f8b3015a0001` through all seven SaaS
+  revisions to `a1b2c3d4e507`. Original business values remained identical; 101 FK
+  relationships had no orphans and no FK was unvalidated. New SaaS tables stayed
+  empty; tenant columns stayed nullable. No legacy mapping, owner assignment or
+  production migration was executed. Populated downgrade was not attempted.
+- PG17 used the pinned existing official image
+  `postgres@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3`,
+  random loopback-only port, random local credentials and tmpfs data. No app server
+  ran; migration processes used invalid provider sentinels and disabled external
+  integrations. An internal-only Docker network initially prevented host access;
+  the successful retry used a local bridge with loopback port publication and
+  reused the same encrypted archive, without another production capture. All
+  owned restore containers/networks were removed after verification.
+- Two focused existing PG17 tests passed: the production registration rollout
+  gate and refusal of missing/live/production billing configuration. Providers
+  were mocked in these tests; no sandbox checkout, email or payment was attempted.
+
+Repeat only under new capture approval: restrict/verify backup ACLs first; validate
+the approved production project; export a read-only snapshot and use it for both
+the inventory and `pg_dump --format=custom --schema=public --no-owner --no-acl
+--snapshot=EXPORTED_SNAPSHOT`. Encrypt its captured bytes in memory with the
+existing tool and retain private provenance. Authenticate/decrypt in memory for
+`pg_restore --exit-on-error --no-owner --no-acl` into a fresh local PG17 database;
+verify complete original-row fingerprints and schema before locally rehearsing
+Alembic upgrades. Never use `--apply` against production, restore into an existing
+customer database, run pytest fixtures against restored customer rows, or replace
+the separate Auth/Storage recovery plan with a public-only archive.
+
+### Current go/no-go — NO-GO for production
+
+- [x] Fresh approved public backup, restricted local storage and successful PG17
+  restore/additive migration rehearsal; no production writes/configuration change.
+- [x] Branch/remote/PR verified at `b3a9b04` before this documentation update;
+  PR #1 remains Draft. No checks/statuses were reported for that commit.
+- [x] Production app registration flags remain off/absent-default-off and Preview
+  test billing remains false. The adapter additionally refuses production billing.
+- [ ] Direct production Supabase signup was still enabled at the last Auth check:
+  application gates alone do not close that public provider path. Approve the
+  exact HTTPS Site URL, sole `/login` redirect and signup restrictions above;
+  retain email confirmation. No production Auth setting was changed here.
+- [ ] SMTP provider/host/port/TLS, username/password, verified From address/name
+  and DNS/delivery verification remain missing; approve configuration and exact
+  test recipients. Staging custom SMTP stays off and uses its approved inbox only.
+- [ ] All four Lemon Squeezy test variables listed above remain absent by name
+  inspection; billing verification stopped. No second invitation inbox is approved.
+- [ ] Confirm independent retention of the backup's original encryption secret;
+  separately approve Auth/Storage backup scope/storage and recovery rehearsal.
+- [ ] Review a production legacy-mapping/write-barrier/recovery plan against this
+  fresh snapshot, decide CI and password-protection requirements, and separately
+  authorize any production configuration, migration or release. This backup
+  approval does not authorize any of those actions or Phase 7B.
