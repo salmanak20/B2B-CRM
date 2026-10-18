@@ -6,7 +6,8 @@ from app.crud import notification as crud_notification
 
 router = APIRouter()
 
-@router.get("/", response_model=List[NotificationResponse])
+@router.get("", response_model=List[NotificationResponse])
+@router.get("/", response_model=List[NotificationResponse], include_in_schema=False)
 def get_notifications(
     db: SessionDep,
     current_user: CurrentActiveUser,

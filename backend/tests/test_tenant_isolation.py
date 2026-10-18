@@ -93,6 +93,24 @@ def headers(user=1,org=1):
     return result
 
 
+@pytest.mark.parametrize('path',['audit-logs','notifications','search'])
+@pytest.mark.parametrize('slash',['','/'])
+def test_list_routes_accept_host_slash_normalization_without_redirects(api,path,slash):
+    client,_=api
+    url='/api/v1/'+path+slash
+    response=client.get(url,params={'q':'Tenant'},headers=headers(),follow_redirects=False)
+    assert response.status_code==200,response.text
+    assert 'location' not in response.headers and 'Tenant2Only' not in response.text
+    anonymous=client.get(url,params={'q':'Tenant'},follow_redirects=False)
+    assert anonymous.status_code==401 and 'location' not in anonymous.headers
+
+
+@pytest.mark.parametrize('slash',['','/'])
+def test_audit_route_alias_does_not_weaken_role_permissions(api,slash):
+    client,_=api
+    assert client.get('/api/v1/audit-logs'+slash,headers=headers(user=1,org=2),follow_redirects=False).status_code==403
+
+
 @pytest.mark.parametrize("path",["companies","contacts","leads","deals","pipelines","tasks","activities","workflows","directory","users","audit-logs/","search/?q=Tenant","exports/companies","exports/contacts","exports/leads","exports/deals","exports/tasks","reports/leads","reports/deals","reports/tasks","reports/team","dashboard/summary","dashboard/sales-performance","dashboard/lead-analytics","dashboard/pipeline-analytics","dashboard/revenue-trend","dashboard/activity-summary","dashboard/team-performance"])
 def test_lists_search_exports_and_aggregates_are_scoped(api,path):
     client,_=api
