@@ -64,3 +64,97 @@ reconciliation remain pending. No live payment path was enabled.
 
 References: [SMTP restrictions](https://supabase.com/docs/guides/auth/auth-smtp),
 [password protection](https://supabase.com/docs/guides/auth/password-security).
+
+## Phase 7A.4 — approval-ready configuration (2026-10-18)
+
+Read-only recheck: `dd846f7` is pushed, PR #1 is Draft; that commit has no
+reported GitHub checks/statuses. No failing check was returned, but this is not
+a green CI result. No runtime code or dependency changes are required here.
+
+### Production Auth delta — approval required, not applied
+
+In production project `hazrihbiqsflnmlcycen` only:
+
+| Setting | Current | Proposed |
+| --- | --- | --- |
+| Site URL | `http://localhost:3000` | `https://b2-b-crm.vercel.app` |
+| Redirect allowlist | Empty | Only `https://b2-b-crm.vercel.app/login` |
+| Allow new users to sign up | On | Off (`disable_signup=true`) |
+| Confirm email | On | Keep on (`mailer_autoconfirm=false`) |
+| Email provider | Enabled | Keep enabled for existing users |
+
+The existing recovery and team services both redirect to `/login`; no new
+`/auth/callback` route, wildcard, localhost or staging redirect is needed in
+production. Keep CRM registration/onboarding verification and billing gates off.
+Recovery and invitation templates currently use provider defaults; the dashboard
+disables source editing without custom SMTP. Retain the documented default
+`{{ .ConfirmationURL }}` link flow; do not hardcode tokens, tenant IDs or alternate
+domains. Full production delivery/token exchange remains untested and needs
+separate approval with explicitly approved recipients after configuration.
+
+### Manual SMTP setup — provider/credentials and approval required
+
+Choose a production sender/provider and supply its SMTP host, port, TLS mode,
+username, password/API credential, verified From email and sender display name.
+Use that provider's required TLS port (commonly STARTTLS/587 or TLS/465), not a
+guessed server. Verify SPF/DKIM/DMARC and disable email link tracking that rewrites
+one-use Auth links. Enter credentials only in the production Supabase SMTP
+settings, then review templates, sending limits and approved-recipient tests.
+Never add SMTP secrets to frontend variables or this repository. Use independent
+credentials for each environment; staging continues built-in email, custom SMTP
+off, and only the already approved team inbox. No email was sent in Phase 7A.4.
+
+### Backup/restore plan — fresh capture requires separate approval
+
+Both October 15 encrypted archives (three calendar days old in Asia/Karachi)
+passed SHA-256 comparison, authenticated decryption and `pg_restore --list`.
+They contain a `0aa836556f2a` public-schema snapshot, dumped from PG17.6 by
+pg_dump18.4; the second metadata file records the later upgrade to `f8b3015a0001`,
+which does not make its earlier dump a snapshot of that later revision.
+No fresh backup or restore was executed. Prior restore evidence is on PG18.4;
+archive listing is not a fresh PG17 restore rehearsal.
+
+After explicit backup approval, verify the production target/revision securely,
+then from `backend` run the existing backup-only operator command:
+
+```powershell
+.\.venv\Scripts\python.exe -m app.db.safe_migrate --backup-only --pg-bin "C:\Program Files\PostgreSQL\18\bin"
+```
+
+Protect the ignored encrypted archive, checksum/revision/count metadata and its
+original encryption secret separately with restricted access. Arrange separately
+approved Auth records and private Storage object/metadata coverage; a public-only
+dump cannot recover those resources. Managed backups are unavailable on this
+project's free plan; no paid upgrade is authorized.
+
+For rehearsal, decrypt the approved archive in memory and feed it to `pg_restore`
+with `--exit-on-error --no-owner --no-acl`, targeting a newly created isolated
+localhost PG17 database only, with target credentials in its subprocess environment.
+Never pipe binary dumps through PowerShell's text pipeline. Compare source
+revision, IDs, content fingerprints, counts and FKs before running the complete
+Alembic chain plus reviewed backfill there; disable external email/billing calls.
+Do not restore customer Auth/Storage into synthetic hosted staging without approval.
+Retain nullable tenant columns and unresolved-owner decisions. Recover forward or
+roll application code back against compatible additive schema; populated SaaS
+downgrades deliberately refuse data loss. A production restore/migration is never
+part of backup approval and needs its own reviewed write barrier/recovery decision.
+
+### Remaining checklist
+
+- [x] Current isolated staging PG17.11/head `a1b2c3d4e507`, production PG17.6/
+  `f8b3015a0001`, distinct Supabase project IDs and scoped Preview envs rechecked.
+- [x] Staging test-billing flag is false; production flag absent/default false,
+  with an additional production refusal in the existing provider adapter.
+- [x] Existing local archives validated without connecting to production for
+  capture, creating a backup or writing plaintext dumps.
+- [ ] Supply the four billing variable names listed above and verified sandbox
+  plan/product/variant configuration. Presence check found all four absent; no
+  checkout/webhook/activation/cancellation/reconciliation attempt was made.
+- [ ] Approve a second project-team inbox for live invitations; none is approved.
+- [ ] Approve the exact production Auth delta above, choose/supply production
+  SMTP settings, and approve specific delivery recipients/tests.
+- [ ] Approve fresh encrypted backup scope/destination and isolated PG17 restore
+  rehearsal, including a separate Auth/Storage recovery plan.
+- [ ] Decide CAPTCHA/leaked-password protection and CI requirements; authorize
+  any paid security option separately. No production change, deployment, main
+  merge or Phase 7B work occurred.
