@@ -263,3 +263,42 @@ the separate Auth/Storage recovery plan with a public-only archive.
 second approved inbox, independent key retention, Auth/Storage capture/restore
 approval, current production mappings/write barrier and security/recovery policy.
 CI success does not authorize production changes, PR merge or Phase 7B execution.
+
+## Phase 7A.7 — external configuration recheck
+
+- `76bba20` is pushed; both existing CI runs have all four jobs green. Protected
+  Preview remains READY at runtime commit `869606f`. Read-only staging checks
+  confirmed the separate project, PG17.11/head `a1b2c3d4e507`, private attachment
+  bucket and zero unvalidated FKs. SSO preview protection remains enabled.
+- No new billing configuration was found. The four `LEMON_SQUEEZY_TEST_*` names
+  listed above are absent from both branch Preview and the ignored staging file;
+  the test flag is false. No store/products could be verified, so no external
+  checkout or webhook attempt was made. Live billing remains disabled.
+- Staging custom SMTP is still disabled, retaining the approved built-in email
+  setup. The completed approved-inbox signup/recovery evidence is retained; no
+  new provider/delivery result is claimed and no repeat email was sent. Production
+  SMTP configuration/delivery remains pending. No second authorized invitation
+  inbox is approved, so live invitation acceptance/roles/revocation remains pending.
+- The user explicitly chose to keep Auth/Storage recovery pending in this phase.
+  No export, restore, signing-key access or recovery-resource provisioning occurred.
+  The earlier public-only PG17 rehearsal remains separate evidence; full recovery
+  scope/destination, independent key retention and Auth/Storage validation are open.
+- Reviewed the approved staging legacy manifest: all 15 tenant-table assignments
+  are represented, approval provenance exists, user 1 retains `sales_rep`, and
+  Legacy owners remain empty. This review does not reconcile the manifest against
+  new production data. Fresh production mapping signoff remains pending; no
+  membership, Auth link, owner or business record was changed.
+- The approved production Auth plan is unchanged: HTTPS production Site URL,
+  sole exact `/login` redirect, signup off and confirmation on. No separate
+  execution authorization was supplied or production configuration applied.
+- Two focused existing PG17 rollout/missing-billing guards passed with synthetic
+  data and mocked providers; no full local QA phase was repeated. These checks
+  do not establish live provider delivery, sandbox processing or recovery success.
+
+**NO-GO:** external configuration was not newly available. Supply verified test
+billing credentials/store/products/mappings, production SMTP setup and approved
+delivery tests, and a second explicitly approved staging inbox. Auth/Storage
+recovery stays pending by user choice. The approved Auth plan still awaits
+separate execution; current production mapping/recovery and pre-cutover backup
+approvals remain open. Existing broad QA is retained, not re-labelled as new live
+external verification. No production mutation, deployment, merge or Phase 7B.
