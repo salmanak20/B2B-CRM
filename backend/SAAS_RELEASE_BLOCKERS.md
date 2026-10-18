@@ -229,3 +229,37 @@ the separate Auth/Storage recovery plan with a public-only archive.
   fresh snapshot, decide CI and password-protection requirements, and separately
   authorize any production configuration, migration or release. This backup
   approval does not authorize any of those actions or Phase 7B.
+
+## Phase 7A.6 — CI repair and complete recovery planning
+
+- Missing-check cause verified: GitHub Actions is enabled, but the repository had
+  no workflows and no runs/checks for `cbd5a18`. Feature Vercel auto-deployment is
+  intentionally disabled; it stays disabled. Absent checks were not green CI.
+- Added `.github/workflows/saas-checks.yml`: branch pushes and main-target PRs,
+  including Drafts, run focused isolated PG17 backend checks and frontend
+  build/shipped-asset checks. Actions/image are pinned, token access is contents
+  read-only, credentials are not persisted, and only synthetic fixture/provider
+  sentinels are used. No deployment or production secret is part of CI.
+- Local workflow-equivalent checks passed: 72 isolation, three integration and
+  22 bootstrap/pooling/rollout guards; frontend build/shipped checks passed.
+  Hosted GitHub run results must be checked after push and reported separately.
+- The exact production Auth delta remains the table above: HTTPS production
+  Site URL, sole exact `/login` redirect, signup off, confirmation on and existing
+  email login retained. The user approved this plan for separate execution;
+  nothing is applied in Phase 7A.6. Public provider signup is not claimed closed.
+- Production SMTP was rechecked read-only and remains disabled. Provider,
+  host/port/TLS, username/password, verified From/name, DNS and approved delivery
+  tests remain required. No provider/sender identity was invented or email sent.
+- All four test-billing variable names remain absent; test flag remains false.
+  Live checkout/webhook tests and live invitations remain pending; no second
+  authorized staging inbox is approved. No live payment path was enabled.
+- [Complete recovery plan](SAAS_RECOVERY_PLAN.md) now covers PostgreSQL, existing
+  Auth identities/configuration, private Storage bytes/metadata/access controls,
+  keys/retention, explicit legacy mappings, validation and rollback limitations.
+  The documented October 18 public backup/PG17 rehearsal remains valid evidence;
+  a new approved pre-cutover backup is required for future customer writes.
+
+**NO-GO:** pending separate execution of the approved Auth plan, SMTP/delivery, sandbox configuration,
+second approved inbox, independent key retention, Auth/Storage capture/restore
+approval, current production mappings/write barrier and security/recovery policy.
+CI success does not authorize production changes, PR merge or Phase 7B execution.
