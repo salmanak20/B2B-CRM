@@ -13,6 +13,8 @@ def organization_id(db):
     from app.models.organization import Organization
     suspended=db.connection().execute(select(Organization.__table__.c.is_suspended).where(Organization.__table__.c.id==value)).scalar_one_or_none()
     if suspended is not False:raise HTTPException(403,"Business workspace is suspended or unavailable")
+    from app.services.subscriptions import require_pilot_access
+    require_pilot_access(db,value)
     return value
 
 

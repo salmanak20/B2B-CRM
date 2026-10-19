@@ -22,3 +22,10 @@ for(const configured of [true,false])test(`subscription page displays ${configur
   expect(writes).toEqual([]);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
 });
+
+test('expired Pilot shows the server expiry message without workspace controls',async({page})=>{
+  await page.route('**/api/v1/**',route=>route.fulfill({status:403,json:{detail:'Free Pilot access expired or inactive. Contact platform administration for manual renewal.'}}));
+  await page.goto('/subscription');
+  await expect(page.getByRole('alert')).toContainText('Free Pilot access expired or inactive.');
+  await expect(page.getByRole('button',{name:/checkout|upgrade|pay|invite/i})).toHaveCount(0);
+});

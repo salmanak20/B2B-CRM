@@ -52,6 +52,8 @@ def active_membership(db, user_id, org_id):
         Membership.organization_id == org_id, Membership.is_active.is_(True),Membership.removed_at.is_(None)).execution_options(populate_existing=True))
     if not member:
         raise HTTPException(403, "Active organization membership is required")
+    from app.services.subscriptions import require_pilot_access
+    require_pilot_access(db,org_id)
     return member
 
 

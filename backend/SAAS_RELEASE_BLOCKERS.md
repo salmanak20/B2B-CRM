@@ -6,6 +6,7 @@ are no longer prerequisites for this launch. Keep `LEMON_SQUEEZY_TEST_ENABLED`
 false; production billing is additionally refused by the adapter. Historical
 billing blockers below describe the earlier paid-launch plan; the Phase 7A.8
 go/no-go checklist at the end supersedes them.
+Phase 7A.9 below supersedes the historical Pilot implementation deferral.
 
 Production release remains blocked. Production configuration/data were read only;
 no deployment, migration, signup, email or payment was executed there.
@@ -402,3 +403,52 @@ complete recovery/key retention, current mappings and fresh backup/release
 approvals remain open. Billing credentials, sandbox checkout and live payments
 are explicitly deferred, not payment-free launch blockers. No deployment,
 production configuration change, PR merge or Phase 7B is authorized here.
+
+## Phase 7A.9 — approved Free Pilot implementation (2026-10-19)
+
+- Created staging plan **ID 1**, code `free_pilot`, through the existing platform
+  API with the approved verified staging administrator. Free (USD 0 metadata),
+  five users including owner, all four existing feature entitlements. Repeated
+  configuration and an independent read-only query verified one identical plan.
+  Existing subscriptions, memberships and business record counts were unchanged.
+  No automatic production seed, schema migration or new billing system.
+- Platform UI: use **Details** to review verified owner IDs, then **Free Pilot**
+  to explicitly approve that owner and a reason. The existing subscription API
+  re-verifies the owner/Auth link and platform session, enforces five seats,
+  fixes dates server-side to 30 days from approval and audits the action. Existing
+  non-Pilot subscriptions cannot be replaced. Separate business suspension is
+  preserved; use the existing explicit Reactivate action after review if needed.
+- Activation retries do not move dates. Renewal requires explicit **Approve
+  30 days** with the previously observed expiry; stale/concurrent retries fail.
+  Renewal starts a new 30-day period from that approval, with no automatic renewal
+  or hidden extension. Only platform admins can configure/activate/renew it.
+- Approved expiry fallback: block the Pilot workspace entirely with a clear
+  expired/inactive message, including reads/exports. Selective read-only/export
+  mode was not safely supported by existing feature/worker authorization.
+  CRM writes, invitations/acceptance, uploads, workflows and tenant workers are
+  blocked by fresh checks in request membership and the tenant-session boundary.
+  A generic organization Reactivate does not renew an expired Pilot. Data,
+  memberships and audits are retained; existing non-Pilot access is unchanged.
+- Expired workspaces are not auto-selected on login, so a verified platform admin
+  can still sign in to renew them. Reminder processing skips denied organizations
+  and continues eligible ones. Billing code remains inactive and preserved;
+  billing flags cannot disable Pilot expiry or grant unlimited access.
+- Passed **149 focused PostgreSQL 17 checks**: 16 Pilot, 18 subscriptions, three
+  payment-free, 72 tenant isolation, 26 onboarding and 14 platform tests. Provider
+  calls in those tests are mocked; the hosted staging plan configuration above
+  used real verified Auth. Only failed/new Pilot checks were repeated after test
+  contract corrections and worker coverage; compatibility suites were retained.
+- Passed **20 desktop/mobile Playwright contracts**, build and shipped-asset
+  checks. Added an isolated Pilot CI matrix job. Final commit/CI is verified on
+  PR #1 after push. New runtime/UI code is not deployed to the hosted Preview;
+  browser and lifecycle tests used disposable/local staging, not customer data.
+
+**Production remains NO-GO:** separately authorize approved production Auth
+configuration, configure SMTP and approved delivery, approve a second staging
+invitation inbox, validate Auth/private Storage recovery and independent key
+retention, reconcile current Legacy mappings without inventing an owner, and
+approve a fresh pre-release backup/write barrier and production administrator/
+release plan. Protected hosted Preview deployment/live Pilot UI validation
+remains a separate staging step. Payments and public production registration stay
+disabled. No production access/configuration/data change, deployment, email or PR
+merge occurred in Phase 7A.9. No existing customer subscription was assigned.

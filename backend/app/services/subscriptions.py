@@ -6,6 +6,25 @@ from app.models.invitation import OrganizationInvitation
 from app.models.subscription import SubscriptionPlan,Subscription
 
 FEATURES=('analytics','exports','workflows','attachments')
+PILOT_CODE='free_pilot'
+PILOT_EXPIRED='Free Pilot access expired or inactive. Contact platform administration for manual renewal.'
+
+
+def pilot_definition():
+    # Explicit operator configuration only; never seed this at startup/migration.
+    return dict(name='Free Pilot',currency='USD',price=0,billing_interval='month',
+                entitlements={f:True for f in FEATURES},seat_limit=5,published=True,external_price_id=None)
+
+
+def require_pilot_access(db,org):
+    # Core metadata read avoids recursive tenant-session hooks and stale ORM caches.
+    s=Subscription.__table__.c;p=SubscriptionPlan.__table__.c
+    row=db.connection().execute(select(s.status,s.starts_at,s.ends_at,s.enforcement_enabled)
+        .select_from(Subscription.__table__.join(SubscriptionPlan.__table__,s.plan_id==p.id))
+        .where(s.organization_id==org,p.code==PILOT_CODE)).first()
+    if row and (not row.enforcement_enabled or not row.ends_at or row.status not in {'active','trialing'}
+                or aware(row.starts_at)>utcnow() or aware(row.ends_at)<=utcnow()):
+        raise HTTPException(403,PILOT_EXPIRED)
 
 def current(db,org):
     return db.scalar(select(Subscription).where(Subscription.organization_id==org).execution_options(populate_existing=True))

@@ -1,6 +1,7 @@
 import hashlib
 import asyncio
 import logging
+from fastapi import HTTPException
 from datetime import datetime,timezone,timedelta
 from sqlalchemy import select,delete
 from sqlalchemy.exc import IntegrityError
@@ -48,7 +49,10 @@ def tick():
     for org in organizations:
         with SessionLocal() as db:
             db.info["organization_id"]=org
-            deliver_due(db)
+            try:deliver_due(db)
+            except HTTPException as error:
+                db.rollback()
+                if error.status_code!=403:raise
 
 async def reminder_loop():
     while True:

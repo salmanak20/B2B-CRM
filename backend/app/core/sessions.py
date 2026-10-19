@@ -39,6 +39,14 @@ def create_session(db, response, user, remember=False, provider=None, recovery=F
     session = AuthSession(id=session_key(raw), user_id=user.id, expires_at=utcnow()+timedelta(seconds=seconds), recovery=recovery)
     if settings.TENANT_ISOLATION_ENABLED:
         choices = db.scalars(select(Membership).join(Organization).where(Membership.user_id==user.id, Membership.is_active.is_(True), Organization.is_suspended.is_(False))).all()
+        from app.services.subscriptions import require_pilot_access
+        eligible=[]
+        for member in choices:
+            try:require_pilot_access(db,member.organization_id)
+            except HTTPException as error:
+                if error.status_code!=403:raise
+            else:eligible.append(member)
+        choices=eligible
         if len(choices)==1:
             session.active_organization_id=choices[0].organization_id
             db.info.update(organization_id=session.active_organization_id, actor_id=user.id)
