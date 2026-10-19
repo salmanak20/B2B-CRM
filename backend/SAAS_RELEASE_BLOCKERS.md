@@ -1,5 +1,12 @@
 # Phase 7A.3 release gate — 2026-10-18
 
+**Current launch decision (2026-10-19): payment-free, manually approved access.**
+Lemon Squeezy is postponed and preserved. Its credentials and live sandbox tests
+are no longer prerequisites for this launch. Keep `LEMON_SQUEEZY_TEST_ENABLED`
+false; production billing is additionally refused by the adapter. Historical
+billing blockers below describe the earlier paid-launch plan; the Phase 7A.8
+go/no-go checklist at the end supersedes them.
+
 Production release remains blocked. Production configuration/data were read only;
 no deployment, migration, signup, email or payment was executed there.
 
@@ -302,3 +309,87 @@ recovery stays pending by user choice. The approved Auth plan still awaits
 separate execution; current production mapping/recovery and pre-cutover backup
 approvals remain open. Existing broad QA is retained, not re-labelled as new live
 external verification. No production mutation, deployment, merge or Phase 7B.
+
+## Phase 7A.8 — payment-free launch preparation (2026-10-19)
+
+- Existing billing routes/models and future sandbox controls are retained.
+  Checkout, portal, history and webhooks refuse disabled billing, even with
+  credentials present. Unsigned requests cannot change subscriptions. Startup
+  does not require billing credentials. Disabling billing does not alter plans,
+  entitlements, memberships or seats; existing legacy access remains unchanged.
+- Subscription UI labels online payments postponed and directs business-access
+  requests to platform administration. Disabled billing displays no checkout or
+  payment actions. Missing/enforcement-disabled seat limits no longer claim an
+  automatic unlimited plan. Future explicitly enabled test controls are retained.
+- Reuse audited `/platform/plans/{code}`, `/platform/subscriptions/{org_id}` and
+  `/platform/organizations/{org_id}` controls; only verified platform admins may
+  configure a manual subscription or reactivate a suspended workspace. Business
+  owners/admins cannot approve themselves. No new subscription system, seeded
+  plan, production price or automatic premium entitlement was introduced.
+
+### Manual access policy and operator gate — approval pending
+
+Before approving a new business, obtain explicit plan, finite seat limit,
+included features, access/trial duration and expiry behavior. No production
+policy was chosen or applied in this phase. Existing subscriptions with
+enforcement off or absent preserve legacy compatibility; they are **not** a
+new-business approval policy. A null seat limit means no enforced cap and must
+not be selected as a launch default without approval.
+
+For an individually authorized, verified new workspace, keep it suspended
+during review using the existing platform control. After policy approval,
+configure the approved plan and subscription (`enforcement_enabled=true`,
+explicit status/start/end, reason), validate active plus reserved seats and
+feature access, then reactivate as a separate explicit platform-admin action.
+Record the verified creator/membership without adopting or promoting a Legacy
+owner. No such organization or subscription was created in hosted staging or
+production by this phase; automated checks use disposable synthetic fixtures.
+
+Public registration must remain off. Existing onboarding, when enabled, creates
+an active workspace; suspension/reactivation is not an automatic approval queue.
+Do not enable public onboarding for this manual launch. Operator intake and the
+new-business activation procedure remain release gates until policy is approved.
+Current expiry behavior preserves core CRM, denies optional features and new
+seat admissions for an expired enforced subscription; it does not suspend the
+organization or erase data. Confirm that behavior or separately approve a change.
+
+### Payment-free go/no-go checklist
+
+- [x] Branch/remote and Draft PR #1 verified at `1a38eb3`; eight prior CI checks
+  passed. No production deployment, migration, mutation or email performed.
+- [x] Read-only environment check: branch Preview has billing false and isolated
+  Supabase/storage settings. Production registration is false/default-off and
+  test billing absent/default-off. Protected synthetic staging registration
+  remains separate from public production registration; settings were not edited.
+- [x] 27 focused PG17 backend tests passed: plan/seat/feature enforcement,
+  platform-only manual controls, owner/viewer
+  restrictions, suspension/reactivation, cross-tenant denial and disabled payment
+  paths validated with synthetic PG17 tests; test limits are not launch policy.
+- [x] 14 desktop/mobile subscription/platform and retained future-billing
+  browser contracts, build and shipped-asset checks passed. Provider tests are
+  mocked/local; no hosted preview update or live provider test is claimed.
+- [ ] Approve manual plan, seats, feature set, duration and expiry behavior, then
+  validate the approved intake/activation procedure before admitting businesses.
+- [ ] Separately authorize execution of the approved production Auth plan:
+  `https://b2-b-crm.vercel.app`, sole exact `/login` redirect, provider signup off,
+  confirmation on. The previously observed direct-provider signup path is not
+  claimed closed. Application registration remains disabled.
+- [ ] Production SMTP: choose provider/host/port/TLS, credentials, verified sender
+  and DNS/delivery checks. Only the previously approved staging team inbox may
+  receive test email. No second inbox exists; live employee invitations pending.
+- [ ] Auth/private Storage recovery remains pending by user decision. Approve
+  scope/destination and provider-supported rehearsal; confirm independent signing/
+  encryption-key retention, custodians, retention, RPO/RTO and recovery policy.
+- [ ] Reconcile current legacy account/Auth links, roles and all record mappings
+  against a fresh approved snapshot, with no assumed owner. Obtain fresh
+  pre-release encrypted backup/write-barrier approval. Retain the October 18
+  public-only PG17 rehearsal and additive-schema rollback limitations described
+  in [the recovery plan](SAAS_RECOVERY_PLAN.md); it is not full Auth/Storage recovery.
+- [ ] Separate production platform-admin identity/bootstrap, migration/release,
+  abuse-protection decisions and final go/no-go approval remain required.
+
+**NO-GO for production:** manual access policy, Auth/SMTP/invitation verification,
+complete recovery/key retention, current mappings and fresh backup/release
+approvals remain open. Billing credentials, sandbox checkout and live payments
+are explicitly deferred, not payment-free launch blockers. No deployment,
+production configuration change, PR merge or Phase 7B is authorized here.

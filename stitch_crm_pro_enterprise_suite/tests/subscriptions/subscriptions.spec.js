@@ -13,10 +13,12 @@ for(const configured of [true,false])test(`subscription page displays ${configur
   });
   await page.goto('/subscription');
   await expect(page.getByRole('heading',{name:'Subscription',exact:true})).toBeVisible();
-  await expect(page.getByText('Billing is unavailable until a real provider is configured.',{exact:false})).toBeVisible();
+  await expect(page.getByText('Online payments are postponed.',{exact:false})).toBeVisible();
   await expect(page.getByText('Active memberships: 2',{exact:false})).toBeVisible();
   if(configured){await expect(page.getByText('Current plan: Starter')).toBeVisible();await expect(page.getByRole('cell',{name:'Contact administrator',exact:true})).toBeVisible();}
   else{await expect(page.getByText('No plans have been published.')).toBeVisible();await expect(page.getByText('Status: Not configured — existing access preserved')).toBeVisible();}
-  await expect(page.getByRole('button',{name:/buy|upgrade|pay/i})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:/buy|upgrade|pay|checkout|billing/i})).toHaveCount(0);
+  if(!configured){await expect(page.getByText('Seat limit: Not enforced - existing access preserved',{exact:false})).toBeVisible();await expect(page.getByText('Unlimited',{exact:false})).toHaveCount(0);}
   expect(writes).toEqual([]);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
 });
