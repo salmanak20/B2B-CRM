@@ -5,7 +5,7 @@ Lemon Squeezy is postponed and preserved. Its credentials and live sandbox tests
 are no longer prerequisites for this launch. Keep `LEMON_SQUEEZY_TEST_ENABLED`
 false; production billing is additionally refused by the adapter. Historical
 billing blockers below describe the earlier paid-launch plan; the Phase 7A.8
-go/no-go checklist at the end supersedes them.
+go/no-go checklist and the latest phase below supersede them.
 Phase 7A.9 below supersedes the historical Pilot implementation deferral.
 
 Production release remains blocked. Production configuration/data were read only;
@@ -558,3 +558,134 @@ deployment authorization. Hosted independent-inbox testing and scheduler executi
 remain pending; isolated security verification is complete for the cases above.
 No production data/configuration access or mutation, Auth/Storage export, key
 copy, migration, deployment, payment, merge or Phase 7B occurred.
+
+
+## Phase 7A.12 — final operational approval gates (2026-10-19)
+
+**NO-GO: approval package prepared; production remains unchanged.** This section
+supersedes historical status above. No deployment, migration, email, recovery
+export, key copy, billing activation or owner assignment occurred.
+
+### Production Auth — freshly inspected, execution still separate
+
+Read-only dashboard inspection of `hazrihbiqsflnmlcycen` confirms the following.
+Apply only during a separately approved configuration window; retain email login,
+existing identities and passwords. No application registration flag is enabled.
+
+| Setting | Observed / rollback baseline | Approved target |
+| --- | --- | --- |
+| `site_url` | `http://localhost:3000` | `https://b2-b-crm.vercel.app` |
+| `uri_allow_list` | Empty | `https://b2-b-crm.vercel.app/login` only |
+| `disable_signup` | `false` | `true` |
+| `mailer_autoconfirm` | `false` | Keep `false` |
+| `external_email_enabled` | `true` | Keep `true` |
+
+Recovery and invitations already request `/login`; no wildcard or extra callback
+is required. Templates remain provider defaults; custom SMTP is OFF. Before the
+approved change, re-read these five fields and stop if the baseline differs.
+Save a non-secret baseline and apply only this delta. Check settings read-back and
+existing-account login; delivery/token exchange requires recipient approval.
+On regression, pause release and obtain rollback authorization: restore the exact
+five baseline values above through Auth settings, read back, and verify login.
+Restoring the old signup/localhost settings reintroduces known gaps; never do so
+automatically or treat rollback as launch-ready. No user deletion, password reset,
+session/key rotation or database rollback is part of this Auth change.
+
+### SMTP — production delivery blocked
+
+No provider, sender domain, sender identity or production recipient is selected.
+Compatible options include Resend, AWS SES and Postmark; selection is pending.
+Supply `smtp_host`, `smtp_port`, `smtp_user`, `smtp_pass`, `smtp_admin_email`
+(verified From) and `smtp_sender_name`; use verified TLS/465 or STARTTLS/587 per
+provider, with certificate validation. For example only, Resend documents
+`smtp.resend.com`, username `resend`, API key as SMTP password, 465 implicit TLS
+or 587 STARTTLS. This example does not select/provision a provider.
+
+Verify a user-controlled sender domain with the provider's exact SPF and DKIM DNS
+records and an approved DMARC policy at `_dmarc.<sender-domain>`; retain one SPF
+policy and merge mechanisms where necessary. Record actual DNS names/values only
+after selecting the domain/provider. `vercel.app` hosting supplies neither an
+approved sender domain nor an outbound SMTP account. Keep credentials independent
+of staging and server-side; disable tracking that rewrites single-use links.
+
+After separate setup approval, allow only exact production `/login` redirects,
+review default recovery/invitation confirmation links, and verify delivery, token
+exchange, password update and invitation acceptance with approved recipients.
+Only the existing approved staging inbox may receive staging signup/recovery;
+no second invitation inbox or production test recipient is approved. No emails
+were sent here. Built-in Supabase SMTP remains staging-only, team-address-limited
+and unsuitable for production; live email onboarding/recovery stays blocked.
+Sources: [Supabase SMTP](https://supabase.com/docs/guides/auth/auth-smtp),
+[Resend SMTP](https://resend.com/docs/send-with-smtp).
+
+### Recovery and legacy reconciliation — approval package
+
+- Retain the approved October 18 public-only PG17.11 rehearsal: 22 restored table
+  fingerprints matched; upgrade through `a1b2c3d4e507` preserved original values
+  and checked 101 FK relationships. This proves neither full Auth/Storage recovery
+  nor freshness. Refresh the encrypted recovery set immediately before cutover,
+  after an approved write barrier, with isolated restore/migration validation.
+- Approve named isolated Auth/Storage destinations, encrypted capture scope,
+  operator and recovery boundary. Preserve Auth UUIDs/links/password recovery
+  material through supported methods, Auth settings, private object bytes and
+  checksums, bucket metadata/policies/grants. Do not replay managed DDL blindly.
+- Select independent secure archive/key storage, custodians, retention/deletion,
+  RPO/RTO and a verified decryption drill. Preserve original backup/app encryption
+  key versions. Record provider issuer/key IDs and supported recovery/rotation;
+  do not assume managed signing private keys can be exported. Re-login may be
+  required. These approvals and Auth/Storage validation remain pending.
+- Fresh production public-metadata reconciliation used a REPEATABLE READ,
+  explicitly READ ONLY transaction, rolled back after SELECTs. Revision remains
+  `f8b3015a0001`; organization, membership, plan and subscription tables do not
+  exist yet. One active legacy CRM user has no Auth link. Tenant inventory:
+  one shared pipeline, six stages, 13 audit rows; all other 12 tenant tables empty.
+  Twenty non-null FK edges and all populated polymorphic references resolved.
+  All 20 tenant rows lack organization assignments under the old schema.
+- Compared with the prior approved staging manifest, only three audit IDs are new;
+  none are missing. The exact IDs, role/link state, audit relationships and proposed
+  assignments remain in ignored local
+  `backend/.tenant-staging/phase7a12-reconciliation.private.json`, SHA-256
+  `801acfc08e2fc15257c54e19538b4d238f8d76ca7f61924defa1174394f14df2`.
+  Customer rows/identifiers are not included in this tracked checklist.
+- Approve that snapshot-specific proposal before migration: one Legacy Organization,
+  existing role/active/ownership/link state preserved, shared configuration/history
+  assigned only as reviewed, no owner. Separately verify and approve any existing
+  Auth identity link and any production platform administrator; staging privileges
+  confer no production approval. Reconcile again at cutover and stop on changes.
+  Existing customer access must be verified before tenant enforcement is enabled.
+- Follow [recovery plan](SAAS_RECOVERY_PLAN.md): populated downgrade guards must not
+  be bypassed. Prefer compatible additive-schema code rollback or forward repair.
+  Restoring older data can lose subsequent writes/identities and needs explicit
+  recovery-point approval; no automatic reverse migration or customer deletion.
+
+### Scheduler and deployment gates
+
+A hosted scheduler is **not required for the initial Pilot security lifecycle**:
+expiry is checked using server time on protected requests and tenant database
+entrypoints, including stale sessions. Renewal is manual, never scheduled.
+Lead workflows execute on CRM events; due notifications can be generated when
+fetched or explicitly checked. Periodic cleanup is housekeeping, not the session
+expiry authorization check. Keep `DUE_NOTIFICATIONS_ENABLED=false`; autonomous
+scheduled reminders are not promised/tested. Retain prior expired worker-entrypoint
+evidence; any later scheduled service needs its own staging execution approval.
+
+Vercel metadata confirms distinct production/staging Supabase projects; production
+`DATABASE_URL`, `JWT_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL`,
+`SUPABASE_PUBLISHABLE_KEY`, bucket and frontend URL names exist. Sensitive values
+were redacted, not decrypted; presence does not establish validity/key recoverability.
+Production Secure cookies/DEBUG=false and registration/due-worker=false remain set.
+Business-registration, verified-email, test-billing and tenant-enforcement variables
+are absent in production and default OFF in branch code; release must explicitly
+review that manifest after mapping approval. Preview test billing remains false.
+The provider adapter refuses production billing; no checkout/webhook or credentials
+are required for this launch. Existing Pilot activation/extension requires platform
+admin authorization and a verified approved owner; no policy/source change here.
+
+Baseline `aca70f7` has all 12 CI checks green; PR #1 remains Draft. Two focused
+release gates passed on disposable PG17.11 (production registration safety and
+billing refusal); `git diff --check` passed. This is a documentation-only update;
+completed hosted/security audits were not repeated. New-commit CI is reported in PR #1.
+Final release remains NO-GO until separately approved Auth execution, SMTP/sender/
+recipients and live delivery, second invitation inbox, complete recovery/keys,
+snapshot-specific mapping/identity approvals, fresh backup/write barrier and an
+explicit migration/deployment window. No Phase 7B action is authorized.
