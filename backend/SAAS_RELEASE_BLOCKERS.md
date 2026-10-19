@@ -327,11 +327,16 @@ external verification. No production mutation, deployment, merge or Phase 7B.
   owners/admins cannot approve themselves. No new subscription system, seeded
   plan, production price or automatic premium entitlement was introduced.
 
-### Manual access policy and operator gate — approval pending
+### Manual access policy and operator gate — implementation deferred
 
-Before approving a new business, obtain explicit plan, finite seat limit,
-included features, access/trial duration and expiry behavior. No production
-policy was chosen or applied in this phase. Existing subscriptions with
+The user approved Free Pilot terms: five users including the owner, analytics,
+exports, workflows and secured attachments; 30 days from platform-admin approval,
+no automatic renewal, then read-only/export access if safely supported or a clear
+expiry suspension. Only platform admins may activate/extend access. These terms
+are not implemented: staging has no configured plan rows (no available IDs or
+entitlements), and current expiry leaves core CRM writable. After reporting that
+incompatibility, the user explicitly chose **keep policy implementation pending**.
+No plan was created or access/expiry behavior changed. Existing subscriptions with
 enforcement off or absent preserve legacy compatibility; they are **not** a
 new-business approval policy. A null seat limit means no enforced cap and must
 not be selected as a launch default without approval.
@@ -351,7 +356,9 @@ Do not enable public onboarding for this manual launch. Operator intake and the
 new-business activation procedure remain release gates until policy is approved.
 Current expiry behavior preserves core CRM, denies optional features and new
 seat admissions for an expired enforced subscription; it does not suspend the
-organization or erase data. Confirm that behavior or separately approve a change.
+organization or erase data. It does not satisfy the approved Pilot cutoff. Reusing
+the existing Starter code/model for a five-seat Free Pilot plus clear expiry
+denial was proposed; implementation is deferred, not authorized by this checklist.
 
 ### Payment-free go/no-go checklist
 
@@ -368,8 +375,10 @@ organization or erase data. Confirm that behavior or separately approve a change
 - [x] 14 desktop/mobile subscription/platform and retained future-billing
   browser contracts, build and shipped-asset checks passed. Provider tests are
   mocked/local; no hosted preview update or live provider test is claimed.
-- [ ] Approve manual plan, seats, feature set, duration and expiry behavior, then
-  validate the approved intake/activation procedure before admitting businesses.
+- [ ] Resume only on user instruction: implement the approved Pilot terms using
+  the existing plan/subscription system, enforce expiry safely and validate the
+  intake/activation procedure before admitting businesses. Implementation is
+  explicitly pending; approval of policy terms is not a completed access gate.
 - [ ] Separately authorize execution of the approved production Auth plan:
   `https://b2-b-crm.vercel.app`, sole exact `/login` redirect, provider signup off,
   confirmation on. The previously observed direct-provider signup path is not
@@ -388,7 +397,7 @@ organization or erase data. Confirm that behavior or separately approve a change
 - [ ] Separate production platform-admin identity/bootstrap, migration/release,
   abuse-protection decisions and final go/no-go approval remain required.
 
-**NO-GO for production:** manual access policy, Auth/SMTP/invitation verification,
+**NO-GO for production:** Pilot implementation/intake, Auth/SMTP/invitation verification,
 complete recovery/key retention, current mappings and fresh backup/release
 approvals remain open. Billing credentials, sandbox checkout and live payments
 are explicitly deferred, not payment-free launch blockers. No deployment,
