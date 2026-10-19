@@ -496,3 +496,65 @@ validate Auth/Storage recovery and independent key retention; approve current
 Legacy account/record mappings without inventing owners; approve a fresh
 pre-cutover encrypted backup/write barrier and explicit production deployment.
 No merge, production migration/configuration change or release is authorized.
+
+## Phase 7A.11 — security evidence and release approval package (2026-10-19)
+
+- Protected Preview remains READY at runtime `86dcb6b`; staging is PG17.11/head
+  `a1b2c3d4e507`, private Storage, distinct staging Auth. No deployment/configuration
+  change in this phase. Branch Preview billing and due-worker flags remain false.
+- **71 focused PG17 tests passed:** 24 Pilot, 18 subscription, 26 organization-team
+  and three payment-free tests. New independent fixture-account tests verify all
+  five roles, cross-organization employee denial, forbidden subscription/entitlement
+  administration, revoked existing cookies, five active seats including owner,
+  sixth-member rejection and concurrent activation yielding one success/one conflict.
+- Existing focused cases also verify reservation/acceptance races, manager-only
+  team functions, four feature entitlements, final-owner protection, platform-only
+  approval/renewal, stale-session expiry, preserved data and unchanged legacy/
+  non-Pilot subscriptions. Duplicate renewal keeps one outcome (stale retry 409),
+  never a second extension. No permissions were weakened and no regression found.
+- **20 desktop/mobile browser contracts passed** for platform/subscription access,
+  manual approval/renewal, expiry UI and disabled payment actions. Providers and
+  browser APIs are mocked here; Phase 7A.10 remains the actual hosted evidence.
+  Real delivery/independent hosted inbox tests are still pending. No emails sent.
+- Retain the verified expired reminder/workflow entrypoint results from 7A.9/10.
+  No safe hosted scheduler is configured (`DUE_NOTIFICATIONS_ENABLED=false`);
+  **hosted scheduled execution remains pending**, not a passed test. No scheduler
+  or live billing was enabled. Existing Lemon Squeezy code remains preserved.
+
+### Separate production approvals required — nothing applied
+
+1. **Auth execution:** approve the separate change window for Site URL
+   `https://b2-b-crm.vercel.app`; sole allowed redirect
+   `https://b2-b-crm.vercel.app/login`; `disable_signup=true`,
+   `mailer_autoconfirm=false`, email login retained. Keep application signup and
+   billing off. This is the previously approved plan, not newly applied settings
+   or a fresh production inspection. No wildcard/staging/localhost redirect.
+2. **SMTP/delivery:** select provider, host, port/TLS, username/secret, verified
+   From address/name and DNS (SPF/DKIM/DMARC). Keep stage/production credentials
+   separate and one-use-link tracking off. Approve exact production recipients
+   before recovery/confirmation/invitation delivery and token-exchange tests.
+   Only the existing staging inbox is approved; a second invitation inbox is not.
+3. **Recovery set:** approve encrypted PostgreSQL capture/storage and isolated PG17
+   restore; separately approve Auth UUID/password/configuration recovery and private
+   Storage bytes/metadata/policies recovery into named isolated destinations.
+   Public-schema rehearsal does not cover Auth identities or object bytes.
+4. **Keys/retention:** select independent secure vault/custodians, retention,
+   RPO/RTO and decryption/restore verification for backup/app encryption material.
+   Record provider signing-key identifiers and supported recovery/rotation; do not
+   assume managed private signing keys are exportable or copy them without approval.
+5. **Legacy mapping:** reconcile fresh snapshot IDs, existing Auth links, roles,
+   memberships and shared/orphan records. Legacy ownership stays unassigned;
+   historical user 1 `sales_rep` approval is not a fresh production reconciliation.
+   No new owner, Auth identity or production platform admin may be inferred.
+6. **Cutover/rollback:** approve write barrier and a fresh encrypted pre-cutover
+   recovery set, mapping validation and release operator/window. Populated SaaS
+   downgrade guards prohibit blind rollback; prefer compatible additive schema/
+   forward repair. Older restores can lose newer data/identities and need explicit
+   recovery-point approval. See [recovery plan](SAAS_RECOVERY_PLAN.md).
+
+**NO-GO:** those approvals/configuration and delivery/recovery evidence remain
+open, including explicit verified production admin identity/bootstrap and final
+deployment authorization. Hosted independent-inbox testing and scheduler execution
+remain pending; isolated security verification is complete for the cases above.
+No production data/configuration access or mutation, Auth/Storage export, key
+copy, migration, deployment, payment, merge or Phase 7B occurred.

@@ -7,7 +7,7 @@ import sqlalchemy as sa
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from tests.test_subscriptions import foundation, control, business, api, isolation_engine, assign
-from app.models import Membership, Company
+from app.models import Membership, Company, User
 from app.models.subscription import Subscription, SubscriptionPlan
 from app.models.invitation import OrganizationInvitation
 from app.models.platform import PlatformAudit
@@ -221,3 +221,69 @@ def test_expired_pilot_rejects_pending_invitation_acceptance_and_reactivation_by
     assert client.get('/api/v1/companies', headers={'X-Organization-ID': '1'}).status_code == 403
     with Session(engine) as db:
         assert db.scalar(sa.select(Membership).where(Membership.organization_id == 1, Membership.user_id == 2)) is None
+
+
+@pytest.mark.parametrize('role,create_status,delete_status', [
+    ('owner',200,200),('admin',200,200),('sales_manager',200,200),
+    ('sales_rep',200,403),('viewer',403,403)])
+def test_independent_pilot_employee_roles_cannot_administer_subscriptions(pilot,role,create_status,delete_status):
+    client,engine,login,pid,_=pilot
+    assert approve(client,pid).status_code==200
+    with Session(engine) as db:
+        m=db.scalar(sa.select(Membership).where(Membership.organization_id==1,Membership.user_id==4))
+        m.is_active=True;m.role=role;m.permission_role_name='admin' if role=='owner' else role
+        record=Company(name='Employee owned fixture',owner_id=4,organization_id=1)
+        db.add(record);db.commit();rid=record.id
+    login(4);h={'X-Organization-ID':'1'}
+    assert client.get('/api/v1/companies',headers=h).status_code==200
+    assert client.post('/api/v1/companies',headers=h,json={'name':'Employee creation'}).status_code==create_status
+    assert client.delete(f'/api/v1/companies/{rid}',headers=h).status_code==delete_status
+    assert client.get('/api/v1/companies',headers={'X-Organization-ID':'2'}).status_code==403
+    assert all(client.get('/api/v1/subscription',headers=h).json()['entitlements'].values())
+    for action in ('activate','extend'):
+        assert approve(client,pid,pilot_action=action).status_code==403
+    assert client.put('/api/v1/platform/plans/free_pilot',json={**pilot_definition(),'reason':'Forbidden employee policy change'}).status_code==403
+
+
+def test_revoked_independent_employee_existing_cookie_loses_access(pilot):
+    client,engine,login,pid,_=pilot
+    assert approve(client,pid).status_code==200
+    login(1);h={'X-Organization-ID':'1'}
+    assert client.put('/api/v1/team/members/4',headers=h,json={'is_active':True,'role':'viewer'}).status_code==200
+    login(4);assert client.get('/api/v1/companies',headers=h).status_code==200
+    employee_cookies=dict(client.cookies)
+    login(1)
+    assert client.put('/api/v1/team/members/4',headers=h,json={'is_active':False}).status_code==200
+    client.cookies.clear();client.cookies.update(employee_cookies)
+    assert client.get('/api/v1/companies',headers=h).status_code in (401,403)
+    with Session(engine) as db:
+        assert db.get(User,4).is_active
+        assert not db.scalar(sa.select(Membership).where(Membership.organization_id==1,Membership.user_id==4)).is_active
+
+
+@pytest.mark.parametrize('concurrent',[False,True])
+def test_five_active_members_include_owner_and_sixth_activation_is_atomic(pilot,concurrent):
+    client,engine,login,pid,_=pilot
+    assert approve(client,pid).status_code==200
+    with Session(engine) as db:
+        template=db.get(User,4)
+        for uid in (6,7):
+            db.add(User(id=uid,name=f'Synthetic employee {uid}',email=f'fixture{uid}@example.com',password_hash=template.password_hash,role_id=template.role_id,is_active=True));db.flush()
+            db.add(Membership(user_id=uid,organization_id=1,role='viewer',is_active=True))
+        db.add(Membership(user_id=2,organization_id=1,role='viewer',is_active=concurrent))
+        if not concurrent:
+            for uid in (4,5):db.scalar(sa.select(Membership).where(Membership.organization_id==1,Membership.user_id==uid)).is_active=True
+        db.commit()
+    if concurrent:
+        from app.services.team import change_member
+        def activate(uid):
+            with TenantSession(engine,autoflush=False) as db:
+                db.info.update(organization_id=1,actor_id=1)
+                try:change_member(db,SimpleNamespace(id=1),uid,is_active=True,role='viewer');db.commit();return 200
+                except HTTPException as error:db.rollback();return error.status_code
+        with ThreadPoolExecutor(max_workers=2) as pool:assert sorted(pool.map(activate,[4,5]))==[200,409]
+    else:
+        login(1)
+        assert client.put('/api/v1/team/members/2',headers={'X-Organization-ID':'1'},json={'is_active':True}).status_code==409
+    with Session(engine) as db:
+        assert db.scalar(sa.select(sa.func.count()).select_from(Membership).where(Membership.organization_id==1,Membership.is_active.is_(True)))==5
