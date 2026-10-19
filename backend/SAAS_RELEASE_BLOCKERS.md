@@ -452,3 +452,47 @@ release plan. Protected hosted Preview deployment/live Pilot UI validation
 remains a separate staging step. Payments and public production registration stay
 disabled. No production access/configuration/data change, deployment, email or PR
 merge occurred in Phase 7A.9. No existing customer subscription was assigned.
+
+## Phase 7A.10 — hosted Pilot validation (2026-10-19)
+
+- With explicit staging deployment approval, deployed exact `86dcb6b` to existing
+  protected Preview `dpl_52CPwr44Ys5D4Yn3twii673DzRMT`, READY, target Preview/null,
+  existing feature alias. SSO protection remains enabled; branch auto-deployment
+  remains disabled. Production deployment/configuration were not changed.
+- Confirmed branch-scoped staging Auth/private Storage settings, real backend
+  readiness, isolated PG17.11/head `a1b2c3d4e507` and Free Pilot ID 1. No migration
+  or payment credentials were required. All 12 source-commit CI checks passed.
+- Using the approved existing verified staging administrator, created two
+  disposable workspaces through hosted onboarding. Live approval granted five-seat
+  configuration (owner counted), all four entitlements and exactly 30 days.
+  Duplicate activation preserved dates. Explicit admin renewal restored access;
+  duplicate renewal failed without extending it again.
+- Hosted companies, contacts, leads, tasks, activities, pipelines/deals, dashboard,
+  export and persistence checks passed. Cross-workspace record/reference and file
+  access were denied. Viewer-role simulation used the same approved identity in
+  a disposable workspace; its original owner role was restored afterward.
+- Subscription UI passed at 1440/390 widths; expired UI displayed the clear
+  fallback error. Checkout and unsigned webhooks returned disabled responses.
+  Harness CSV/status/fixture/context/timing corrections were required; no product
+  regression or source-code fix was established. Initial short UI waits expired
+  while hosted requests were still loading; no performance benchmark is claimed.
+- Controlled expiry affected only the tagged fixture subscription. Stale-session
+  reads, writes, exports, workflow access, invitations, uploads and private file
+  access were denied. Real private Storage upload/download passed; the object
+  survived expiry/renewal and was then removed. CRM records/memberships remained.
+- Reminder and workflow entrypoints, invoked locally against the isolated staging
+  database, both rejected expired Pilot access. Dates and retirement were restored;
+  no hosted scheduler was enabled or claimed tested. Test sessions logged out and
+  disposable organizations were suspended; their synthetic CRM/audits retained.
+- **Still pending:** a second approved independent identity/inbox for live employee
+  invitation/acceptance, real multi-user five-seat admission and non-platform
+  owner/employee renewal denial. Existing isolated backend tests cover those
+  permissions/capacity paths; they are not new live independent-identity results.
+  No new identity, email, real payment or customer subscription change occurred.
+
+**Production NO-GO remains:** separately authorize production Auth execution;
+configure SMTP and approved delivery; approve an independent invitation inbox;
+validate Auth/Storage recovery and independent key retention; approve current
+Legacy account/record mappings without inventing owners; approve a fresh
+pre-cutover encrypted backup/write barrier and explicit production deployment.
+No merge, production migration/configuration change or release is authorized.
