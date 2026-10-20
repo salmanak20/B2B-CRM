@@ -830,5 +830,5 @@ gates above retained. PR #1 stays Draft; no production release or hosted Preview
 deployment is part of this implementation. Isolated fixture tests are not live
 identity/delivery proof. Local verification passed: 21 PostgreSQL platform tests,
 24 Free Pilot tests, 14 desktop/mobile browser contracts, production build and
-shipped-asset checks. The platform suite is now included in CI guards. Final
+shipped-asset checks. The platform suite has its own isolated CI matrix job. Final
 commit CI is verified separately after push; completed audits are not repeated.
