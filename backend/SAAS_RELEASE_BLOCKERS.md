@@ -689,3 +689,111 @@ Final release remains NO-GO until separately approved Auth execution, SMTP/sende
 recipients and live delivery, second invitation inbox, complete recovery/keys,
 snapshot-specific mapping/identity approvals, fresh backup/write barrier and an
 explicit migration/deployment window. No Phase 7B action is authorized.
+
+## Private existing-user Pilot decision — 2026-10-20
+
+**NO-GO remains.** This scope supersedes earlier requirements to complete SMTP
+and invitation delivery before an **existing-user-only private Pilot**. Resend is
+preferred later, after obtaining a verified sender domain. Custom domain, SMTP,
+new-user invitations and email recovery are deferred; authentication verification,
+tenant controls, recovery-set readiness and individual execution approvals are not.
+No runtime code, production setting, customer identity or ownership changes here.
+
+### Feasibility and provisioning limits
+
+- Existing confirmed Supabase email/password identities can authenticate without
+  sending email. CRM additionally requires an active linked CRM account; tenant
+  access requires approved active membership, an unsuspended organization and valid
+  enforced Pilot access. An Auth account alone grants no CRM membership or role.
+  This is code/documentation verification, not a newly executed production login.
+- Latest read-only production reconciliation found one unlinked legacy CRM account
+  and no SaaS organization/membership tables. No eligible production cohort or
+  administrator has been approved. Preserve that account, its role, all records
+  and relationships; no inferred email link or Legacy owner assignment.
+- The existing no-email identity-link option accepts an explicit Auth UUID in
+  `POST /api/v1/users/{user_id}/invite`; it checks confirmed matching provider email,
+  preserves the existing CRM account and audits/revokes sessions. It requires an
+  authorized tenant administrator and an existing suitable membership context, so
+  it cannot bootstrap production or resolve an unapproved legacy mapping.
+- Team invitations always call provider `/invite` or `/otp`. Auth admin creation
+  is a server-only provider capability independent of public signup; it does not
+  establish mailbox ownership, a CRM link, membership or workspace access. Never
+  set `email_confirm=true` merely because a person was commercially approved.
+- There is **no approved end-to-end no-email new-user provisioning procedure** in
+  the current CRM. Minimum prerequisites for a later separately reviewed procedure:
+  independently prove identity and mailbox control; approve exact identity/role/
+  organization mapping; use a supported server-only provider operation and an
+  approved recipient-bound, expiring, one-use activation channel; let the user set
+  their own password; validate CRM linkage, seat admission and auditability in
+  isolation before any production provisioning. No shared/operator-chosen customer
+  credentials, manually asserted verification, public signup or raw SQL bypass.
+  Until such a procedure is approved and verified, defer new users.
+- With `BUSINESS_REGISTRATION_ENABLED=false`, `/auth/onboarding` is denied. Its
+  existing creation flow creates an owner membership; platform administration
+  currently approves existing organizations/Pilots and has no organization-create
+  endpoint. Do not enable registration/email-readiness flags or invoke internal
+  creation helpers as a shortcut. A reviewed, explicitly approved existing
+  organization/owner/membership provisioning plan is a private-launch prerequisite.
+- Forgot-password and invitation UI/API remain present and can attempt provider
+  email; SMTP deferral does not technically disable those endpoints. Do not invoke
+  them or promise delivery. Approve the restricted cohort's lockout/support policy
+  and how access to email-triggering actions is controlled before launch. No
+  automated invitation service is introduced or enabled. Lost-password users wait
+  for approved recovery; no administrator password reset or verification bypass.
+
+### Exact proposed production Auth change — NOT executed
+
+Target existing project `hazrihbiqsflnmlcycen`, after recovery readiness and separate
+Auth execution/window approval. Re-read current configuration and capture a
+non-secret baseline immediately before applying this Management API delta:
+
+```json
+{
+  "site_url": "https://b2-b-crm.vercel.app",
+  "uri_allow_list": "https://b2-b-crm.vercel.app/login",
+  "disable_signup": true,
+  "mailer_autoconfirm": false,
+  "external_email_enabled": true
+}
+```
+
+Use authenticated `PATCH /v1/projects/hazrihbiqsflnmlcycen/config/auth`; credentials
+stay outside chat/logs/Git. Retain anonymous sign-in OFF, existing identity UUIDs,
+passwords, sessions and signing keys; configure no SMTP/unverified sender. The
+last live check found signup ON, confirmation ON and email login ON; URL baseline
+was localhost/empty at the earlier dashboard inspection and must be reread.
+Disabling public signup preserves existing-user sign-in and server-authorized
+admin creation; admin provisioning still needs separate identity/security approval.
+Read back settings and verify approved existing-user login/session/logout and
+rejected public registration after execution. No signup probe or email now.
+Do not automatically restore unsafe public-signup settings on failure: stop and
+request exact recovery/rollback authorization while protecting production data.
+
+### Release checklist by scope
+
+| Scope | Required gates / status |
+| --- | --- |
+| Private existing-user Pilot | Green CI on final commit; provider and application public signup OFF; confirmed linked approved cohort and verified production platform administrator; explicit organization/owner/membership mapping/provisioning; tenant enforcement and real production Pilot plan ID; 30 days/five seats including owner/all four entitlements; platform-only activation/renewal; expiry and worker denial/data preservation; payment UI/checkout/webhooks OFF. Existing hosted/security evidence retained; actual production cohort/access unverified. |
+| Mandatory for every production launch | Approved legacy mapping and preservation; full Auth/private Storage/PostgreSQL recovery destinations and restore verification; independent key custody/version retention, retention period, RPO/RTO; validated production configuration; approved operator/window/write barrier/communications; fresh encrypted cutover backup and isolated PG17 rehearsal; separate Auth, export, privilege, migration, merge and deployment approvals. ALL remain release gates. |
+| Deferred private-Pilot functionality | New identities/memberships via invitations, independent second staging inbox and live invitation/seat-acceptance delivery tests, email confirmation delivery and lost-password recovery. Resend sender/domain/DNS/TLS/credentials and exact recipients remain unapproved; no unverified sender. Approve explicit unavailable-service/support restrictions for the existing-user cohort. |
+| Future public registration | A new explicit business approval to open registration; verified sender/domain and operational SMTP; confirmation/recovery/invitation delivery and abuse/rate-limit checks; tested identity/CRM onboarding, ownership, isolation and seat admission; reviewed registration/email-readiness flags and provider settings. Organization/Pilot approval remains platform-only; payments remain OFF unless independently authorized later. |
+
+Pilot code/security behavior is unchanged: activation requires an existing active
+verified owner, counts seats, sets 30 days using server time and audits approval;
+stale renewal retries cannot extend again. Tenant and expired-worker boundaries,
+private Storage and cross-tenant denial retain prior hosted/isolated evidence.
+Production billing is rejected before provider calls; no Lemon Squeezy credentials
+or webhook activation needed. Scheduled reminders stay OFF. Prior 12/12 CI was
+for `8d4f91a`; documentation-commit CI must be checked again after push.
+
+**Next approvals:** nominate exact existing administrator/cohort and approve
+snapshot-specific mappings/provisioning plus restricted support/email-action
+policy; approve complete recovery scope/destinations, custodians/retention/RPO/RTO
+and rehearsal; then separately approve the exact Auth delta and cutover actions.
+Merge and production deployment are separate approvals; main-branch automatic
+deployment must be controlled before any merge. PR #1 stays Draft. No new phase.
+
+Sources: [signup and confirmation configuration](https://supabase.com/docs/guides/auth/general-configuration),
+[password login and email-dependent recovery](https://supabase.com/docs/guides/auth/passwords),
+[server-only admin creation](https://supabase.com/docs/reference/javascript/auth-admin-createuser),
+[provider admin implementation](https://github.com/supabase/auth/blob/master/internal/api/admin.go).
