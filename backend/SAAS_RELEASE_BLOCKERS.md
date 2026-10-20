@@ -797,3 +797,38 @@ Sources: [signup and confirmation configuration](https://supabase.com/docs/guide
 [password login and email-dependent recovery](https://supabase.com/docs/guides/auth/passwords),
 [server-only admin creation](https://supabase.com/docs/reference/javascript/auth-admin-createuser),
 [provider admin implementation](https://github.com/supabase/auth/blob/master/internal/api/admin.go).
+
+## Dedicated Super Admin interface — staging implementation
+
+Reuses `/platform-admin`, the existing platform administrator identity/session
+checks, platform audit/lock, subscription services and fixed Free Pilot controls.
+Adds organization status/expiry metrics, active-user and occupied-seat counts,
+seven-day Pilot expiry counts, business/member/invitation review and explicit
+provider identity verification. New platform-only metadata endpoints under
+`/platform/organizations/{org_id}` expose no customer CRM records or credentials.
+Membership/invitation revocation is scoped to the requested organization, audited
+in the same transaction, preserves global identities/other memberships and protects
+the final active owner. Revocation grants no role, seat, owner or platform access.
+Expired/suspended records remain intact. No new schema or migration is introduced.
+
+Dashboard statuses are operational metadata: no subscription is awaiting approval;
+active requires valid subscription dates (and Pilot enforcement), suspension takes
+precedence over expiry. Active users count distinct active account holders with
+active memberships; occupied seats follow existing active-membership accounting.
+Ordinary owners/employees cannot use platform routes. The dedicated responsive
+sidebar, filters, details, reasons/confirmation dialogs and audit table reuse CRM
+styles. No account or workspace is created by the new interface; Pilot approval
+still requires an existing verified active owner. No invitation email is sent by
+these review/revoke controls. Existing tenant invitation/recovery limitations stay.
+
+The nominated production administrator was checked read-only against CRM and Auth:
+no matching existing account/identity was found. The email is kept out of tracked
+evidence. No identity was created, linked, confirmed or granted privileges. User
+must resolve verified account provisioning/mapping before any separately approved
+bootstrap. Production remains NO-GO with all recovery/key custody/backup/mapping
+gates above retained. PR #1 stays Draft; no production release or hosted Preview
+deployment is part of this implementation. Isolated fixture tests are not live
+identity/delivery proof. Local verification passed: 21 PostgreSQL platform tests,
+24 Free Pilot tests, 14 desktop/mobile browser contracts, production build and
+shipped-asset checks. The platform suite is now included in CI guards. Final
+commit CI is verified separately after push; completed audits are not repeated.

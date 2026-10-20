@@ -59,3 +59,54 @@ for(const renewal of [false,true])test(`platform ${renewal?'renews':'approves'} 
   expect(writes[0]).toEqual({path:'/api/v1/platform/subscriptions/8',body:{plan_id:4,status:'active',enforcement_enabled:true,pilot_action:renewal?'extend':'activate',approved_owner_id:7,...(renewal?{expected_ends_at:'2026-10-18T00:00:00Z'}:{}),reason:'Approved staging business'}});
   expect(writes[0].body.starts_at).toBeUndefined();expect(writes[0].body.ends_at).toBeUndefined();
 });
+
+for(const width of [1440,390])test(`admin layout and scoped membership review at ${width}px`,async({page})=>{
+  await page.setViewportSize({width,height:950});const writes=[],errors=[];
+  page.on('pageerror',e=>errors.push(e.message));
+  await page.route('**/api/v1/**',async route=>{
+    const r=route.request(),path=new URL(r.url()).pathname;
+    if(r.method()==='PUT'){writes.push({path,body:r.postDataJSON()});return route.fulfill({json:{ok:true}});}
+    const data=path.endsWith('/summary')?{businesses:1,active:1,suspended:0,expired:0,pending:0,active_users:2,occupied_seats:2,active_pilots:1,expiring_pilots:1}:
+      path.endsWith('/organizations')?[{id:1,name:'Business A',slug:'a',is_suspended:false,access_status:'active',members:2,seat_limit:5,plan:'Free Pilot'}]:
+      path.endsWith('/organizations/1')?{name:'Business A',created_at:'2026-10-16T00:00:00Z',access_status:'active',verified_owners:[{id:7,name:'Verified Owner',email:'owner@example.com'}]}:
+      path.endsWith('/subscriptions/1')?{plan:{name:'Free Pilot'},subscription:{status:'active',ends_at:'2026-11-16T00:00:00Z'},seats:{active:2,pending:1,limit:5},entitlements:{analytics:true,exports:true,workflows:true,attachments:true}}:
+      path.endsWith('/members')?[{user_id:7,name:'Employee',email:'member@example.com',role:'viewer',is_active:true,auth_linked:true}]:
+      path.endsWith('/identity')?{verified:true}:
+      path.endsWith('/invitations')?[{id:12,email:'invite@example.com',role:'viewer',expires_at:'2026-11-01T00:00:00Z'}]:[];
+    return route.fulfill({json:data});
+  });
+  await page.goto('/platform-admin');
+  await expect(page.getByText('Expiring within 7 days',{exact:true})).toBeVisible();
+  await expect(page.getByRole('navigation')).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
+  await page.screenshot({path:`test-results/platform-admin-${width}.png`,fullPage:true});
+  await page.getByRole('button',{name:'Details',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Organization members',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Verify identity',exact:true}).click();
+  await expect(page.getByText('Verified matching email',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Revoke access',exact:true}).click();
+  await page.getByLabel('Revocation reason').fill('Explicit member access review');
+  await page.getByRole('button',{name:'Confirm revocation',exact:true}).click();
+  await expect.poll(()=>writes.length).toBe(1);
+  expect(writes[0]).toEqual({path:'/api/v1/platform/organizations/1/members/7/revoke',body:{reason:'Explicit member access review'}});
+  expect(errors).toEqual([]);
+});
+
+test('search filters requests and server errors stay in confirmation dialog',async({page})=>{
+  const queries=[];
+  await page.route('**/api/v1/**',async route=>{
+    const r=route.request(),url=new URL(r.url()),path=url.pathname;
+    if(r.method()==='PUT')return route.fulfill({status:409,json:{detail:'The final active owner cannot lose ownership or access'}});
+    if(path.endsWith('/organizations'))queries.push(url.search);
+    const data=path.endsWith('/summary')?{businesses:1}:path.endsWith('/organizations')?[{id:1,name:'Business A',slug:'a',is_suspended:false}]:[];
+    return route.fulfill({json:data});
+  });
+  await page.goto('/platform-admin');
+  await page.getByLabel('Business name').fill('Business A');await page.getByLabel('Status',{exact:true}).selectOption('expired');
+  await page.getByRole('button',{name:'Search',exact:true}).click();
+  await expect.poll(()=>queries.some(q=>q.includes('status=expired')&&q.includes('q=Business+A'))).toBeTruthy();
+  await page.getByRole('button',{name:'Suspend',exact:true}).click();
+  await page.getByLabel('Reason').fill('Review');await page.getByRole('button',{name:'Confirm',exact:true}).click();
+  await expect(page.getByRole('dialog')).toContainText('The final active owner cannot lose ownership or access');
+  await expect(page.getByRole('button',{name:'Confirm',exact:true})).toBeEnabled();
+});

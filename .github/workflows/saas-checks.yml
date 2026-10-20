@@ -27,7 +27,7 @@ jobs:
           - suite: integration
             tests: tests/test_saas_integration.py
           - suite: guards
-            tests: tests/test_platform_bootstrap.py tests/test_hosted_pooling.py tests/test_business_onboarding.py::test_default_and_production_rollout_gate
+            tests: tests/test_platform_admin.py tests/test_platform_bootstrap.py tests/test_hosted_pooling.py tests/test_business_onboarding.py::test_default_and_production_rollout_gate
           - suite: payment-free
             tests: tests/test_payment_free_launch.py
           - suite: free-pilot
