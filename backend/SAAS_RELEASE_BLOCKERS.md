@@ -883,10 +883,10 @@ The requested production scope is:
   accounts are provisioned or approved only through the authorized admin process.
 
 Production account preflight was read-only against the `b2b-crm` Supabase project
-on 2026-10-23. For **each** requested email, the active Auth identity count was 0,
-the matching `public.users` CRM account count was 0, and the linked CRM account
-count was 0. Production has no `organizations`, `memberships`,
-`platform_administrators`, or `subscriptions` tables, so neither email currently
+on 2026-10-23. For **each** requested email, active `auth.users` count and matching
+email `auth.identities` count were both 0; matching `public.users` CRM account
+count and linked CRM account count were also 0. Production has no `organizations`,
+`memberships`, `platform_administrators`, or `subscriptions` tables, so neither email currently
 has a production workspace membership or platform-admin grant. The database is
 PostgreSQL 17.6 at Alembic revision `f8b3015a0001`. An email alone is not an
 identity or authorization predicate. No account, identity, membership, link,
