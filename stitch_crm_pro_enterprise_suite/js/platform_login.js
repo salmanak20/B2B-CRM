@@ -10,8 +10,10 @@ function fail(e){showError(error,e);}
 function password(){
   step.innerHTML=`<form id="admin-password">${field('email','Email','email','',{required:true,autocomplete:'username'})}${field('password','Password','password','',{required:true,autocomplete:'current-password'})}<button class="primary login-submit">Continue securely</button></form><p class="subtle">Your password stays in this private form. Authenticator verification follows.</p>`;
   step.querySelector('form').onsubmit=async e=>{e.preventDefault();const form=e.currentTarget,button=form.querySelector('button');button.disabled=true;error.innerHTML='';try{
-    const response=await fetch(API_BASE_URL+'/auth/login?platform=true',{method:'POST',credentials:'include',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({username:form.email.value,password:form.password.value})});
-    form.password.value='';const result=await response.json();if(!response.ok)throw new Error(typeof result.detail==='string'?result.detail:'Unable to sign in');
+    const email=form.querySelector('[name="email"]').value.trim(),password=form.querySelector('[name="password"]').value;
+    form.reset();
+    const response=await fetch(API_BASE_URL+'/auth/login?platform=true',{method:'POST',credentials:'include',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({username:email,password})});
+    const result=await response.json();if(!response.ok)throw new Error(typeof result.detail==='string'?result.detail:'Unable to sign in');
     await mfa();
   }catch(e){fail(e);button.disabled=false;}};
 }
