@@ -1,5 +1,6 @@
 import {initApp,workspace} from './app.js';
 import {apiGet,apiPut,apiPost} from './api.js';
+import {navigate} from './config.js';
 import {fetchCurrentUser} from './auth.js';
 import {isAdmin} from './rbac.js';
 import {esc,heading,field,showError,toast} from './ui.js';
@@ -7,7 +8,7 @@ async function start(){const user=await initApp('Settings');if(!user)return;cons
   main.querySelectorAll('form').forEach(form=>form.querySelectorAll('input,select,textarea').forEach(input=>{const old=input.id;input.id=form.id+'-'+input.name;const label=form.querySelector('label[for=\"'+old+'\"]');if(label)label.htmlFor=input.id;}));
   bind('profile-form','[data-profile-error]',async data=>{await apiPut('/users/me',{name:data.name,preferences:{timezone:data.timezone,compact_view:data.compact_view==='true'}});await fetchCurrentUser();toast('Profile saved.');await start();});
   bind('workspace-form','[data-workspace-error]',async data=>{await apiPut('/workspace',{...data,currency:'USD'});toast('Organization settings saved.');await start();});
-  bind('password-form','[data-password-error]',async data=>{await apiPost('/auth/password',data);location.assign('/login');});
+  bind('password-form','[data-password-error]',async data=>{await apiPost('/auth/password',data);navigate('/login');});
   function bind(id,errorSelector,save){const form=document.getElementById(id);if(!form)return;form.onsubmit=async e=>{e.preventDefault();const btn=form.querySelector('[type=submit]');if(btn.disabled)return;btn.disabled=true;try{await save(Object.fromEntries(new FormData(form)));}catch(error){showError(form.querySelector(errorSelector),error);}finally{btn.disabled=false;}};}
 }
 start().catch(error=>showError(document.querySelector('main')||document.getElementById('app'),error));

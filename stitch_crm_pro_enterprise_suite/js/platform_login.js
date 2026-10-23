@@ -1,4 +1,4 @@
-import {API_BASE_URL} from './config.js';
+import {API_BASE_URL,navigate,desktopRequestSignal,reportDesktopConnectionError} from './config.js';
 import {apiGet,apiPost,setSessionRedirect} from './api.js';
 import {field,showError,esc} from './ui.js';
 import '../css/platform-admin.css';
@@ -12,14 +12,14 @@ function password(){
   step.querySelector('form').onsubmit=async e=>{e.preventDefault();const form=e.currentTarget,button=form.querySelector('button');button.disabled=true;error.innerHTML='';try{
     const email=form.querySelector('[name="email"]').value.trim(),password=form.querySelector('[name="password"]').value;
     form.reset();
-    const response=await fetch(API_BASE_URL+'/auth/login?platform=true',{method:'POST',credentials:'include',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({username:email,password})});
+    let response;try{response=await fetch(API_BASE_URL+'/auth/login?platform=true',{method:'POST',credentials:'include',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({username:email,password}),signal:desktopRequestSignal()});}catch(error){reportDesktopConnectionError();throw error;}
     const result=await response.json();if(!response.ok)throw new Error(typeof result.detail==='string'?result.detail:'Unable to sign in');
     await mfa();
   }catch(e){fail(e);button.disabled=false;}};
 }
 async function mfa(){
   const state=await apiGet('/auth/platform/mfa');
-  if(state.ready){location.assign('/platform-admin');return;}
+  if(state.ready){navigate('/platform-admin');return;}
   if(!state.factors.length){
     step.innerHTML='<h2>Set up your authenticator</h2><p>Use an authenticator app to protect every platform session. Starting setup replaces any unfinished setup key.</p><button id="enroll-mfa" class="primary">Set up authenticator</button>';
     step.querySelector('button').onclick=beginEnrollment;
@@ -38,6 +38,6 @@ function verification(factors,setup=''){
   step.innerHTML=`<h2>Verify authenticator</h2>${setup}<form>${field('factor','Authenticator','select',factors[0].id,{choices:factors.map(f=>[f.id,f.name])})}${field('code','Six digit code','text','',{required:true,autocomplete:'one-time-code'})}<button class="primary login-submit">Verify and enter</button></form>${setup?'<button type="button" id="restart-mfa" class="quiet">Restart unfinished setup</button>':''}`;
   const restart=document.getElementById('restart-mfa');if(restart)restart.onclick=beginEnrollment;
   const input=step.querySelector('[name=code]');input.inputMode='numeric';input.pattern='[0-9]{6}';input.maxLength=6;input.focus();
-  step.querySelector('form').onsubmit=async e=>{e.preventDefault();const form=e.currentTarget,button=form.querySelector('button');button.disabled=true;try{await apiPost('/auth/platform/mfa/verify',{factor_id:form.factor.value,code:form.code.value});input.value='';location.assign('/platform-admin');}catch(e){fail(e);input.value='';button.disabled=false;}};
+  step.querySelector('form').onsubmit=async e=>{e.preventDefault();const form=e.currentTarget,button=form.querySelector('button');button.disabled=true;try{await apiPost('/auth/platform/mfa/verify',{factor_id:form.factor.value,code:form.code.value});input.value='';navigate('/platform-admin');}catch(e){fail(e);input.value='';button.disabled=false;}};
 }
 password();

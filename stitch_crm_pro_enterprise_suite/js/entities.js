@@ -2,7 +2,8 @@ import {apiGet,apiPost,apiPut,apiDelete} from './api.js';
 import {initApp,workspace} from './app.js';
 import {getCurrentUser} from './auth.js';
 import {canCreateOrEdit,canDelete,isManagerOrAdmin} from './rbac.js';
-import {esc,heading,button,field,modal,table,empty,showError,toast,money,badge,date,downloadText} from './ui.js';
+import {IS_DESKTOP,resolveApiUrl} from './config.js';
+import {esc,heading,button,field,modal,table,empty,showError,toast,money,badge,date,downloadText,downloadBlob} from './ui.js';
 import {openImport} from './imports_ui.js';
 const statuses=['new','contacted','qualified','nurturing','converted','unqualified','lost'];
 const sources=['website','referral','email','phone','social_media','advertisement','cold_call','event','other'];
@@ -98,7 +99,7 @@ async function renderAttachments(entity,id,main){
   container.innerHTML=files.length?`<div class="file-list">${files.map(f=>`<div class="file-row"><span>${esc(f.name)} <small class="subtle">${Math.ceil(f.size/1024)} KB${f.upload_state==='pending'?' - Pending upload; quota reserved until cleanup':''}</small></span><div class="actions"><button data-download-file="${f.id}">Download</button>${canCreateOrEdit()?`<button data-delete-file="${f.id}" class="danger">Delete</button>`:''}</div></div>`).join('')}</div>`:empty('No attachments','Upload a supported file to attach it to this record.');
   const upload=main.querySelector('[data-action=upload]');upload.disabled=!config.available||!canCreateOrEdit();if(!config.available)container.insertAdjacentHTML('beforeend','<p class="subtle">Private file storage is not configured. Ask your administrator to connect storage.</p>');
   upload.onclick=()=>modal({id:'attachment-modal',title:'Upload attachment',body:'<div class="field full"><label for="attachment-file">File</label><input id="attachment-file" type="file" accept=".pdf,.png,.jpg,.jpeg,.txt,.csv" required/><small>PDF, PNG, JPEG, TXT or CSV. Maximum 3 MB.</small></div>',save:'Upload',onSave:async()=>{const file=document.getElementById('attachment-file').files[0];if(file.size>3*1024*1024)throw new Error('Maximum upload size is 3 MB.');const data=new FormData();data.append('file',file);const {apiFetch}=await import('./api.js');await apiFetch(`/records/${entity}/${id}/attachments`,{method:'POST',body:data});toast('Attachment uploaded.');await renderAttachments(entity,id,main);}});
-  main.querySelectorAll('[data-download-file]').forEach(b=>b.onclick=async()=>{try{const data=await apiGet(`/attachments/${b.dataset.downloadFile}/download`);location.assign(data.url);}catch(error){toast(error.message);}});
+  main.querySelectorAll('[data-download-file]').forEach(b=>b.onclick=async()=>{try{const data=await apiGet(`/attachments/${b.dataset.downloadFile}/download`);if(IS_DESKTOP){const response=await fetch(resolveApiUrl(data.url),{credentials:'include'});if(!response.ok)throw new Error(response.status===401?'Your session expired. Sign in again.':'Attachment download failed. Please try again.');downloadBlob(await response.blob(),files.find(file=>String(file.id)===b.dataset.downloadFile)?.name||'attachment');}else location.assign(data.url);}catch(error){toast(error.message);}});
   main.querySelectorAll('[data-delete-file]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this attachment permanently?'))return;try{await apiDelete(`/attachments/${b.dataset.deleteFile}`);await renderAttachments(entity,id,main);}catch(error){toast(error.message);}});
 }
 async function convertForm(record,after){

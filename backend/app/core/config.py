@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     SUPABASE_STORAGE_BUCKET: str = "crm-attachments"
     FRONTEND_URL: str = "http://localhost:5173"
     SESSION_COOKIE_NAME: str = "crm_session"
+    SESSION_COOKIE_SAMESITE: str = "lax"
     SESSION_HOURS: int = 8
     REMEMBER_DAYS: int = 30
     COOKIE_SECURE: bool = False
@@ -42,6 +43,10 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def production_safety(self):
+        if self.SESSION_COOKIE_SAMESITE.lower() not in {"lax", "none"}:
+            raise ValueError("SESSION_COOKIE_SAMESITE must be lax or none")
+        if self.SESSION_COOKIE_SAMESITE.lower() == "none" and not self.COOKIE_SECURE:
+            raise ValueError("SameSite=None session cookies require COOKIE_SECURE=true")
         if self.AUTH_PROVIDER not in {"legacy", "supabase"}:
             raise ValueError("AUTH_PROVIDER must be legacy or supabase")
         if self.ENVIRONMENT == "production":

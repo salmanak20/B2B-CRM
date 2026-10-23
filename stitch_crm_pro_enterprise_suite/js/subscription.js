@@ -1,5 +1,6 @@
 import {initApp} from './app.js';
 import {apiGet,apiPost} from './api.js';
+import {openExternal} from './config.js';
 import {esc,heading,table,showError,date,field,modal,toast} from './ui.js';
 import {usageTable,trendsTable} from './usage_ui.js';
 async function start(){
@@ -22,10 +23,10 @@ async function start(){
       document.querySelectorAll('[data-test-checkout]').forEach(button=>button.onclick=async()=>{
         button.disabled=true;const key='billing-request-'+user.organization_id+'-'+button.dataset.testCheckout;
         const requestKey=sessionStorage.getItem(key)||crypto.randomUUID();sessionStorage.setItem(key,requestKey);
-        try{const result=await apiPost('/billing/checkout',{plan_id:Number(button.dataset.testCheckout),request_key:requestKey});location.assign(result.url);}catch(error){if(error.status===409)sessionStorage.removeItem(key);fail(error);button.disabled=false;}
+        try{const result=await apiPost('/billing/checkout',{plan_id:Number(button.dataset.testCheckout),request_key:requestKey});await openExternal(result.url);}catch(error){if(error.status===409)sessionStorage.removeItem(key);fail(error);button.disabled=false;}
       });
       const portal=document.getElementById('billing-portal');
-      if(portal)portal.onclick=async()=>{portal.disabled=true;try{const result=await apiPost('/billing/portal');location.assign(result.url);}catch(error){fail(error);portal.disabled=false;}};
+      if(portal)portal.onclick=async()=>{portal.disabled=true;try{const result=await apiPost('/billing/portal');await openExternal(result.url);}catch(error){fail(error);portal.disabled=false;}};
       if(current.provider_status){let page=1;const load=async()=>{const data=await apiGet('/billing/history',{page});document.getElementById('billing-history').innerHTML='<h3>Provider billing history (test)</h3>'+table(['Date','Status','Total','Refund','Invoice'],data.invoices.map(i=>`<tr><td>${esc(date(i.created_at))}</td><td>${esc(i.status)}</td><td>${esc(i.total_formatted)}</td><td>${esc(i.refunded_amount_formatted||'—')}</td><td>${i.invoice_url?`<a href="${esc(i.invoice_url)}" target="_blank" rel="noopener noreferrer">Invoice</a>`:'Pending'}</td></tr>`))+`<button id="billing-prev" ${page===1?'disabled':''}>Previous</button><button id="billing-next" ${data.invoices.length<20?'disabled':''}>Next</button>`;document.getElementById('billing-prev').onclick=()=>{page--;load().catch(fail);};document.getElementById('billing-next').onclick=()=>{page++;load().catch(fail);};};await load();}
     }
   }catch(error){showError(root,error);}

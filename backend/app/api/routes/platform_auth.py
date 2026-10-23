@@ -82,5 +82,5 @@ def revoke(db:SessionDep,request:Request,response:Response,user:CurrentUser):
     auth_request('POST','/logout?scope=global',token=decrypt(session.access_token))
     audit(db,user.id,'platform_sessions_revoked',user.id,'User revoked all provider and application sessions')
     revoke_user_sessions(db,user.id)
-    response.delete_cookie(settings.SESSION_COOKIE_NAME,path='/api',secure=settings.COOKIE_SECURE,httponly=True,samesite='lax')
+    response.delete_cookie(settings.SESSION_COOKIE_NAME,path='/api',secure=settings.COOKIE_SECURE,httponly=True,samesite=settings.SESSION_COOKIE_SAMESITE.lower())
     return {'ok':True}

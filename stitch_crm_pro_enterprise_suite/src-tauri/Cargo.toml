@@ -1,0 +1,15 @@
+[package]
+name = "b2b-crm-desktop"
+version = "1.0.0"
+description = "B2B CRM Windows desktop client"
+authors = ["B2B CRM"]
+edition = "2021"
+rust-version = "1.90"
+
+[build-dependencies]
+tauri-build = { version = "=2.7.4" }
+
+[dependencies]
+tauri = { version = "=2.12.5" }
+tauri-plugin-opener = "=2.7.2"
+url = "=2.5.8"

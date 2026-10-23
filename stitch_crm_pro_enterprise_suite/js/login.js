@@ -1,6 +1,7 @@
 import {enterWorkspace} from './team_entry.js';
 import {login,fetchCurrentUser} from './auth.js';
 import {apiGet,apiPost} from './api.js';
+import {routeUrl} from './config.js';
 import {esc,icon,field,showError,modal} from './ui.js';
 async function start(){
   const params=new URLSearchParams(location.search),fragment=new URLSearchParams(location.hash.slice(1));
@@ -8,7 +9,7 @@ async function start(){
   const implicitToken=fragment.has('access_token')||fragment.has('refresh_token');
   const implicitRecovery=fragment.get('type')==='recovery'||fragment.get('type')==='invite';
   // Remove one-time codes/tokens before making requests or rendering the page.
-  if(callbackError||implicitToken||params.has('code')||params.has('token_hash'))history.replaceState(null,'','/login');
+  if(callbackError||implicitToken||params.has('code')||params.has('token_hash'))history.replaceState(null,'',routeUrl('/login'));
   const root=document.getElementById('app');root.innerHTML=`<div class="login-page"><section class="login-card" aria-label="Sign in"><div class="brand"><span class="brand-mark">CP</span><span>CRM Pro</span></div><h1>Welcome back</h1><p class="subtle">Sign in to your workspace.</p><div id="login-error-banner" role="alert" hidden></div><form id="login-form">${field('email','Email','email','',{id:'email',required:true,autocomplete:'username'})}<div class="field"><label for="password">Password <span aria-hidden="true">*</span></label><div class="password-wrap"><input id="password" name="password" type="password" required autocomplete="current-password"/><button type="button" id="show-password" class="icon-button quiet" aria-label="Show password" aria-pressed="false">${icon('eye')}</button></div></div><div class="login-options"><label><input type="checkbox" id="remember-me" name="remember"/>Remember me</label><button type="button" class="quiet" id="forgot-password">Forgot password?</button></div><button type="submit" class="primary login-submit">Sign In</button></form><p class="session-policy" id="session-policy">Your session is protected by a secure server cookie.</p></section></div>`;
   const form=document.getElementById('login-form'),banner=document.getElementById('login-error-banner');const fail=error=>{banner.hidden=false;showError(banner,error);};
   document.getElementById('show-password').onclick=e=>{const btn=e.currentTarget,input=document.getElementById('password');input.type=input.type==='password'?'text':'password';btn.setAttribute('aria-label',input.type==='password'?'Show password':'Hide password');btn.setAttribute('aria-pressed',String(input.type==='text'));};

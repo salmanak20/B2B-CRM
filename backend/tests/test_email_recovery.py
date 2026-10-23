@@ -68,6 +68,16 @@ def test_default_email_uses_pkce_and_secure_server_cookie(recovery, monkeypatch)
     assert state['verifier'] not in response.text and 'same browser' in response.json()['message']
 
 
+def test_desktop_recovery_cookie_can_use_cross_site_secure_policy(recovery, monkeypatch):
+    client, _, user, _, _ = recovery
+    monkeypatch.setattr(settings, 'COOKIE_SECURE', True)
+    monkeypatch.setattr(settings, 'SESSION_COOKIE_SAMESITE', 'none')
+    response = client.post('/api/v1/auth/forgot-password', json={'email': user.email})
+    cookie = response.headers['set-cookie']
+    assert response.status_code == 200
+    assert all(item in cookie for item in ['HttpOnly', 'Secure', 'SameSite=none', 'Path=/api/v1/auth'])
+
+
 def test_recovery_code_creates_restricted_session_then_password_change_revokes_it(recovery):
     client, db, _, _, calls = recovery
     initiate(recovery)

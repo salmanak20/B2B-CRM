@@ -1,0 +1,66 @@
+name: Windows desktop build
+
+on:
+  push:
+    branches: [feature/windows-desktop-app]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-desktop-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  installer:
+    name: Build unsigned Windows x64 installer
+    runs-on: windows-2022
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: stitch_crm_pro_enterprise_suite
+    env:
+      VITE_API_BASE_URL: https://b2-b-crm.vercel.app/api/v1
+      RUSTUP_TOOLCHAIN: 1.90.0
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: stitch_crm_pro_enterprise_suite/package-lock.json
+      - name: Install locked frontend dependencies
+        run: npm ci
+      - name: Verify existing web build
+        run: |
+          npm run build
+          npm run check
+      - name: Verify desktop frontend bundle
+        run: |
+          npm run desktop:build
+          npm run check:desktop
+      - name: Build NSIS installer
+        run: npm run tauri -- build --bundles nsis
+      - name: Prepare named installer artifact
+        shell: pwsh
+        run: |
+          $setups = @(Get-ChildItem -LiteralPath 'src-tauri/target/release/bundle/nsis' -Filter '*-setup.exe' -File)
+          if ($setups.Count -ne 1) { throw "Expected exactly one NSIS setup file, found $($setups.Count)." }
+          Copy-Item -LiteralPath $setups[0].FullName -Destination "$env:GITHUB_WORKSPACE/B2B-CRM-Setup.exe"
+          $cargoLock = 'src-tauri/Cargo.lock'
+          if (-not (Test-Path -LiteralPath $cargoLock)) { throw 'The Windows build did not create Cargo.lock.' }
+          Copy-Item -LiteralPath $cargoLock -Destination "$env:GITHUB_WORKSPACE/B2B-CRM-Cargo.lock"
+          Get-FileHash -LiteralPath "$env:GITHUB_WORKSPACE/B2B-CRM-Setup.exe" -Algorithm SHA256
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: B2B-CRM-Windows-x64
+          path: |
+            B2B-CRM-Setup.exe
+            B2B-CRM-Cargo.lock
+          if-no-files-found: error
+          retention-days: 14

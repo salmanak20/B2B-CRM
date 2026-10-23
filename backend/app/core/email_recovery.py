@@ -24,7 +24,7 @@ def start_recovery(email):
 
 def save_recovery(response, state):
     response.set_cookie(cookie_name(), state, max_age=RECOVERY_TTL, path="/api/v1/auth",
-                        secure=settings.COOKIE_SECURE, httponly=True, samesite="lax")
+                        secure=settings.COOKIE_SECURE, httponly=True, samesite=settings.SESSION_COOKIE_SAMESITE.lower())
     response.headers["Cache-Control"] = "no-store"
 
 
@@ -40,4 +40,4 @@ def read_recovery(request):
 
 def clear_recovery(response):
     response.delete_cookie(cookie_name(), path="/api/v1/auth", secure=settings.COOKIE_SECURE,
-                           httponly=True, samesite="lax")
+                           httponly=True, samesite=settings.SESSION_COOKIE_SAMESITE.lower())

@@ -55,7 +55,7 @@ def create_session(db, response, user, remember=False, provider=None, recovery=F
     db.add(session)
     db.commit()
     response.set_cookie(settings.SESSION_COOKIE_NAME, raw, httponly=True, secure=settings.COOKIE_SECURE,
-                        samesite="lax", path="/api", max_age=seconds if remember else None)
+                        samesite=settings.SESSION_COOKIE_SAMESITE.lower(), path="/api", max_age=seconds if remember else None)
     response.headers["Cache-Control"] = "no-store"
     return session
 

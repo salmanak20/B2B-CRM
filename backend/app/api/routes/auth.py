@@ -220,7 +220,7 @@ def logout(db:SessionDep,request:Request,response:Response):
                     pass
             db.delete(session)
             db.commit()
-    response.delete_cookie(settings.SESSION_COOKIE_NAME,path="/api",secure=settings.COOKIE_SECURE,httponly=True,samesite="lax")
+    response.delete_cookie(settings.SESSION_COOKIE_NAME,path="/api",secure=settings.COOKIE_SECURE,httponly=True,samesite=settings.SESSION_COOKIE_SAMESITE.lower())
 
 @router.post("/forgot-password")
 def forgot(body:EmailRequest,db:SessionDep,request:Request,response:Response):
@@ -286,5 +286,5 @@ def change_password(body:PasswordChange,db:SessionDep,request:Request,response:R
     auth_request("POST","/logout?scope=global",token=decrypt(session.access_token))
     revoke_user_sessions(db,current_user.id)
     log_event(db,"Password Changed",current_user.id,"User",current_user.id,"Password changed using identity provider")
-    response.delete_cookie(settings.SESSION_COOKIE_NAME,path="/api")
+    response.delete_cookie(settings.SESSION_COOKIE_NAME,path="/api",secure=settings.COOKIE_SECURE,httponly=True,samesite=settings.SESSION_COOKIE_SAMESITE.lower())
     return {"message":"Password updated. Please sign in again."}

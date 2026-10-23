@@ -1,13 +1,13 @@
-import { API_BASE_URL } from './config.js';
+import { API_BASE_URL,IS_DESKTOP,navigate,routeUrl } from './config.js';
 let redirectExpiredSession=true;
 export function setSessionRedirect(enabled){redirectExpiredSession=enabled;}
 export class ApiError extends Error { constructor(message,status,data){super(message);this.status=status;this.data=data;} }
-export function getLoginUrl(){return '/login';}
+export function getLoginUrl(){return routeUrl('/login');}
 export async function apiFetch(endpoint,options={}){
   const headers={...(options.body instanceof FormData?{}:{'Content-Type':'application/json'}),...options.headers};
   let response;
-  try{response=await fetch(API_BASE_URL+endpoint,{...options,headers,credentials:'include'});}
-  catch{throw new ApiError('Unable to reach the server. Check your connection and try again.',0,null);}
+  try{response=await fetch(API_BASE_URL+endpoint,{...options,...(IS_DESKTOP&&!options.signal?{signal:AbortSignal.timeout(30000)}:{}),headers,credentials:'include'});}
+  catch(error){if(IS_DESKTOP)window.dispatchEvent(new Event('crm:connection-error'));throw new ApiError(error?.name==='TimeoutError'?'The server did not respond in time. Check your connection and try again.':'Unable to reach the server. Check your connection and try again.',0,null);}
   if(response.status===204)return null;
   const type=response.headers.get('content-type')||'';
   if(response.ok&&type.includes('text/csv'))return response.blob();
@@ -16,7 +16,7 @@ export async function apiFetch(endpoint,options={}){
     const detail=data?.detail;
     const message=Array.isArray(detail)?detail.map(e=>`${e.loc?.slice(1).join('.')||'Field'}: ${e.msg}`).join('; '):typeof detail==='string'?detail:response.status>=500?'The service is temporarily unavailable. Please try again.':`Request failed (${response.status}).`;
     if(redirectExpiredSession&&response.status===401&&!location.pathname.includes('login')&&!location.pathname.includes('crm_pro_enterprise')){
-      location.assign('/login?expired=1');
+      navigate('/login?expired=1');
     }
     throw new ApiError(message,response.status,data);
   }
