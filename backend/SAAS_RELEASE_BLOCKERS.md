@@ -10,8 +10,11 @@ Staging alone is upgraded to `a1b2c3d4e509`. Existing record fingerprints were
 preserved, aggregate totals matched exact current CRM counts, private metadata
 RLS/grants passed and real-workspace transactional quota rejection passed with
 validation writes rolled back. Historical aggregates start at instrumentation.
-Current staging has only one verified Auth identity; an independent live employee
-recipient and user-interactive MFA verification remain external validation gates.
+Current staging has only one verified Auth identity. Live staging MFA verification
+has passed (verified provider factor and `platform_mfa_verified` audit event).
+An independent live employee recipient and the signed-in browser walkthrough
+remain external validation gates; subsequent rejected password attempts and
+ended sessions are now distinguished by safe provider error messages.
 
 Focused local results: 19 new quota/MFA/pending-flow PostgreSQL checks, 72 tenant
 isolation checks, 26 team checks, 24 Pilot checks, 21 platform checks, 18 subscription

@@ -40,6 +40,9 @@ verified factors cannot be removed through this flow.
 No token is returned to browser storage. Password changes and all-session
 revocation are available from Platform Settings. Login/enrollment/verification and
 session revocation use existing rate-limit, session and platform-audit services.
+Documented provider errors distinguish incorrect credentials, ended sessions,
+incorrect authenticator codes and expired challenges. Raw provider messages and
+credentials are never echoed to the browser.
 
 Production provisioning remains **blocked**, independently of deployment status:
 
