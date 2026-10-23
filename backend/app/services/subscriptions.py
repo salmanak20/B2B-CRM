@@ -49,7 +49,9 @@ def check_seat(db,org,exclude_invitation=None):
     if not live(sub):raise HTTPException(403,'Subscription does not permit additional seats')
     plan=db.get(SubscriptionPlan,sub.plan_id,populate_existing=True)
     active,pending=usage(db,org,exclude_invitation)
-    if plan.seat_limit is not None and active+pending>=plan.seat_limit:
+    from app.services.usage import seat_limit
+    limit=seat_limit(sub,plan)
+    if limit is not None and active+pending>=limit:
         raise HTTPException(409,'Organization seat limit reached (including pending invitations)')
 
 def feature_allowed(db,org,feature):

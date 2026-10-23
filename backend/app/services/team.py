@@ -112,7 +112,18 @@ def invite(db,actor,name,email,role):
         raise HTTPException(409,"An invitation is already pending")
     from app.services.subscriptions import check_seat
     check_seat(db,organization_id(db))
-    provider_id=send_invitation(email,name,existing)
+    if settings.AUTH_EMAIL_CONFIGURATION_VERIFIED:
+        provider_id=send_invitation(email,name,existing)
+    elif existing and existing['auth_user_id']:
+        # No email and no identity creation: the verified existing recipient
+        # sees this invitation after their own normal authenticated sign-in.
+        identity=auth_request('GET','/admin/users/'+existing['auth_user_id'],admin=True)
+        identity=identity.get('user',identity)
+        if identity.get('id')!=existing['auth_user_id'] or identity.get('email','').lower()!=email or not identity.get('email_confirmed_at'):
+            raise HTTPException(422,'The existing recipient must have a verified matching identity')
+        provider_id=existing['auth_user_id']
+    else:
+        provider_id=None  # Pending delivery only; no Auth account or membership.
     if not row:
         row=OrganizationInvitation(email=email,name=name,role=role,invited_by=actor.id,
             provider_user_id=provider_id,expires_at=now+timedelta(days=7),status="pending")

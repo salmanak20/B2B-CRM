@@ -13,6 +13,8 @@ from app.services.team import send_invitation as real_send_invitation
 
 @pytest.fixture
 def employees(api,monkeypatch):
+    from app.core.config import settings
+    monkeypatch.setattr(settings,'AUTH_EMAIL_CONFIGURATION_VERIFIED',True)
     client,engine=api
     with Session(engine) as db:
         default=db.scalar(sa.select(Role.id).where(Role.name=="viewer"))

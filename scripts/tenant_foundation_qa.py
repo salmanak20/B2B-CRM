@@ -20,6 +20,8 @@ def main():
     parser.add_argument("--team", action="store_true", help="Run Phase 3 PostgreSQL team tests")
     parser.add_argument("--onboarding", action="store_true", help="Run Phase 4 PostgreSQL onboarding tests")
     parser.add_argument("--platform", action="store_true")
+    parser.add_argument("--usage", action="store_true")
+    parser.add_argument("--tests", nargs='+', help="Focused test files in an isolated localhost database")
     parser.add_argument("--subscriptions", action="store_true")
     parser.add_argument("--billing", action="store_true")
     parser.add_argument("--integration", action="store_true", help="Run cross-phase integration and migration recovery tests")
@@ -66,10 +68,12 @@ def main():
             tests = ["tests/test_tenant_isolation.py"] if args.isolation else (["tests/test_tenant_backfill.py"] if args.backfill else ["tests/test_tenant_foundation.py", "tests/test_auth.py"])
             if args.team: tests=["tests/test_organization_team.py"]
             if args.platform: tests=["tests/test_platform_admin.py"]
+            if args.usage: tests=["tests/test_usage_limits.py"]
             if args.subscriptions: tests=["tests/test_subscriptions.py"]
             if args.billing: tests=["tests/test_lemon_billing.py"]
             if args.integration: tests=["tests/test_saas_integration.py"]
             if args.onboarding: tests=["tests/test_business_onboarding.py"]
+            if args.tests: tests=args.tests
             print(run([sys.executable, "-B", "-m", "pytest", "-q", *tests, "--disable-warnings"]))
         finally:
             if started:

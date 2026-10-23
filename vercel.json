@@ -15,6 +15,14 @@
       "trailingSlash": false,
       "rewrites": [
         {
+          "source": "/platform-admin/login",
+          "destination": "/platform_admin_login/code.html"
+        },
+        {
+          "source": "/usage",
+          "destination": "/subscription_crm_pro/code.html"
+        },
+        {
           "source": "/subscription",
           "destination": "/subscription_crm_pro/code.html"
         },

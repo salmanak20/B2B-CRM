@@ -23,7 +23,7 @@ test('organization team controls preserve design and send scoped requests',async
   await page.getByLabel('Full Name').fill('New Employee');
   await page.getByLabel('Email').fill('new@example.com');
   await page.getByLabel('Organization Role').selectOption('viewer');
-  await page.getByRole('button',{name:'Send Invitation',exact:true}).click();
+  await page.getByRole('button',{name:'Record Invitation',exact:true}).click();
   await expect.poll(()=>writes.length).toBe(1);
   expect(writes[0]).toEqual({path:'/api/v1/team/invitations',body:{name:'New Employee',email:'new@example.com',role:'viewer'}});
   await page.locator('[data-member-edit="2"]').click();

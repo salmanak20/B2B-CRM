@@ -22,14 +22,30 @@ def verify_target(db,user_id):
         raise HTTPException(422,'The existing user identity must have a verified matching email')
     return user
 
-def authorize(db,request,user):
-    session=getattr(request.state,'auth_session',None)
+def administrator(db,user):
     admin=db.get(PlatformAdministrator,user.id,populate_existing=True)
-    if not user.is_active or not admin or not admin.is_active or admin.auth_user_id!=user.auth_user_id or not session or session.recovery or settings.AUTH_PROVIDER!='supabase':
+    if not user.is_active or not admin or not admin.is_active or admin.auth_user_id!=user.auth_user_id or settings.AUTH_PROVIDER!='supabase':
         raise HTTPException(403,'Platform administrator access required')
-    identity=auth_request('GET','/user',token=decrypt(session.access_token))
+    return admin
+
+
+def authorize(db,request,user,require_mfa=True):
+    session=getattr(request.state,'auth_session',None)
+    admin=administrator(db,user)
+    if not session or session.recovery:
+        raise HTTPException(403,'Platform administrator access required')
+    token=decrypt(session.access_token)
+    identity=auth_request('GET','/user',token=token)
     if identity.get('id')!=admin.auth_user_id or not identity.get('email_confirmed_at'):
         raise HTTPException(403,'Verified platform administrator session required')
+    if require_mfa and settings.PLATFORM_MFA_REQUIRED:
+        # The provider just authenticated this exact server-held token. Decode
+        # only after provider validation; no browser-supplied JWT is trusted.
+        import jwt
+        try: claims=jwt.decode(token,options={'verify_signature':False})
+        except jwt.PyJWTError: raise HTTPException(403,'Complete administrator MFA at /platform-admin/login')
+        if claims.get('sub')!=admin.auth_user_id or claims.get('aal')!='aal2' or not any(f.get('status')=='verified' for f in identity.get('factors',[])):
+            raise HTTPException(403,'Complete administrator MFA at /platform-admin/login')
     return user
 
 def audit(db,actor,action,target,reason):

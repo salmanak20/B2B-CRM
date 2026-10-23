@@ -10,6 +10,8 @@
 .platform-shell .badge.suspended,.platform-shell .badge.expired,.platform-shell .badge.revoked{background:#ffebee;color:#9f1633}
 .platform-shell .badge.pending{background:#fff3d9;color:#815715}
 .platform-shell h3{margin-top:22px}
+.mfa-secret{display:block;overflow-wrap:anywhere;padding:16px;background:var(--bg);font-size:15px}
+.platform-shell progress{width:90px;accent-color:var(--primary)}
 #record-modal{width:min(1000px,calc(100vw - 32px))}
 @media(max-width:900px){
  .platform-shell .sidebar{position:static;width:100%;height:auto;transform:none;display:flex}

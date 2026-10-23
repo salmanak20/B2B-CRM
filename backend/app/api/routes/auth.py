@@ -76,7 +76,7 @@ def linked_user(db, identity):
 
 @router.get("/config")
 def auth_config():
-    return {"provider":settings.AUTH_PROVIDER,"recovery_available":settings.AUTH_PROVIDER=="supabase",
+    return {"provider":settings.AUTH_PROVIDER,"recovery_available":settings.AUTH_PROVIDER=="supabase" and settings.AUTH_EMAIL_CONFIGURATION_VERIFIED,
             "session_hours":settings.SESSION_HOURS,"remember_days":settings.REMEMBER_DAYS,"sso_available":False,
             "business_registration_enabled":registration_enabled()}
 
@@ -143,10 +143,19 @@ def login(db:SessionDep,request:Request,response:Response,form:OAuth2PasswordReq
         user=get_user_by_email(db,form.username.lower())
         if not user or not verify_password(form.password,user.password_hash) or not user.is_active:
             raise HTTPException(401,"Incorrect email or password")
+    platform_login=request.query_params.get('platform')=='true'
+    if platform_login:
+        from app.services.platform import administrator
+        administrator(db,user)
+        remember=False
     previous=request.cookies.get(settings.SESSION_COOKIE_NAME)
     if previous:
         db.execute(delete(AuthSession).where(AuthSession.id==session_key(previous)))
-    create_session(db,response,user,remember,provider)
+    create_session(db,response,user,remember,provider,platform=platform_login)
+    if platform_login:
+        from app.services.platform import audit
+        audit(db,user.id,'platform_password_login',user.id,'Password authentication; MFA required before platform operations')
+        db.commit()
     log_event(db,"Login",user.id,"User",user.id,"User signed in")
     principal = user
     if db.info.get("organization_id"):
@@ -167,6 +176,10 @@ def platform_access(db:SessionDep,request:Request,current_user:CurrentUser):
     try:authorize(db,request,current_user)
     except HTTPException as error:
         if error.status_code!=403:raise
+        try:authorize(db,request,current_user,require_mfa=False)
+        except HTTPException as base_error:
+            if base_error.status_code!=403:raise
+        else:return {'is_platform_admin':False,'platform_mfa_required':True}
         return {'is_platform_admin':False}
     return {'is_platform_admin':True}
 
@@ -214,6 +227,8 @@ def forgot(body:EmailRequest,db:SessionDep,request:Request,response:Response):
     limit_auth(db,request,body.email,"recovery")
     if settings.AUTH_PROVIDER!="supabase":
         raise HTTPException(503,"Account recovery requires the configured production identity provider")
+    if not settings.AUTH_EMAIL_CONFIGURATION_VERIFIED:
+        raise HTTPException(503,'Email recovery is unavailable until secure delivery is verified. Contact your administrator.')
     challenge,state=start_recovery(str(body.email).lower())
     try:
         auth_request("POST","/recover?redirect_to="+quote(settings.FRONTEND_URL.rstrip('/')+"/login",safe=""),

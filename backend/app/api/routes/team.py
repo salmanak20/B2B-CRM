@@ -26,7 +26,7 @@ class MemberUpdate(BaseModel):
     is_active:bool|None=None
 
 def invitation_data(row):
-    return {key:getattr(row,key) for key in ("id","name","email","role","status","expires_at")}
+    return {key:getattr(row,key) for key in ("id","name","email","role","status","expires_at")}|{'acceptance_available':bool(row.provider_user_id),'delivery_available':settings.AUTH_EMAIL_CONFIGURATION_VERIFIED}
 
 @router.get('/team/members')
 def members(db:SessionDep,actor:CurrentActiveUser):
@@ -36,7 +36,8 @@ def members(db:SessionDep,actor:CurrentActiveUser):
         result.append({"user_id":m.user_id,"name":m.user.name,"email":m.user.email,
             "role":m.role,"is_active":m.is_active,"is_self":m.user_id==actor.id,
             "can_manage":current.role=="owner" or m.role!="owner"})
-    return {"members":result,"actor_role":current.role,"roles":team.ROLES if current.role=="owner" else team.ROLES[1:]}
+    from app.services.usage import consumption
+    return {"members":result,"actor_role":current.role,"roles":team.ROLES if current.role=="owner" else team.ROLES[1:],"seats":consumption(db,actor.organization_id)['seats'],"email_delivery_available":settings.AUTH_EMAIL_CONFIGURATION_VERIFIED}
 
 @router.put('/team/members/{user_id}')
 def update(user_id:int,body:MemberUpdate,db:SessionDep,actor:CurrentActiveUser):

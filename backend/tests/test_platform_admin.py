@@ -10,6 +10,8 @@ from app.db.tenant_session import TenantSession
 
 @pytest.fixture
 def control(business,monkeypatch):
+    from app.core.config import settings
+    monkeypatch.setattr(settings,'PLATFORM_MFA_REQUIRED',False)
     client,engine,login,identities,calls=business
     original=platform.auth_request
     def provider(method,path,**kwargs):

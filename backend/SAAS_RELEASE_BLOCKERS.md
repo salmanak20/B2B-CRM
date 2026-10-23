@@ -1,5 +1,36 @@
 # Phase 7A.3 release gate — 2026-10-18
 
+**23 October 2026 development update:** production remains **NO-GO**. The
+dedicated administrator login/MFA, aggregate Organization Insights, individual
+resource quotas, verified-owner manual registration and pending invitation flows
+extend the existing architecture. See `PLATFORM_ADMIN.md` for the exact behavior
+and reviewed provisioning prerequisites; no production guard is bypassed.
+
+Staging alone is upgraded to `a1b2c3d4e509`. Existing record fingerprints were
+preserved, aggregate totals matched exact current CRM counts, private metadata
+RLS/grants passed and real-workspace transactional quota rejection passed with
+validation writes rolled back. Historical aggregates start at instrumentation.
+Current staging has only one verified Auth identity; an independent live employee
+recipient and user-interactive MFA verification remain external validation gates.
+
+Focused local results: 18 new quota/MFA/pending-flow PostgreSQL checks, 72 tenant
+isolation checks, 26 team checks, 24 Pilot checks, 21 platform checks, 18 subscription
+checks, 3 migration integration checks, 3 payment-free checks and 32 Auth/bootstrap/
+pooling/recovery checks passed. Desktop/mobile/browser verification and production
+build passed; the responsive sweep runs on desktop across widths and skips its
+duplicate mobile invocation. Final commit CI and hosted Preview evidence are
+reported separately after push.
+
+Read-only production recheck: schema remains `f8b3015a0001`; the nominated identity
+and linked CRM account remain absent; public provider signup is still enabled.
+No production configuration, identity, owner, grant, migration, merge or deployment
+was changed. Full recovery package, local/external destinations, key custody,
+retention/RPO/RTO, full isolated recovery rehearsal, fresh cutover backup and exact
+legacy mapping approvals remain mandatory. Existing public-only rehearsal evidence
+does not satisfy complete Auth/private-Storage recovery. Production Auth changes,
+exports, identity creation, linkage, initial privilege, backup/write barrier,
+migration, merge and deployment each require their own explicit authorization.
+
 **Current launch decision (2026-10-19): payment-free, manually approved access.**
 Lemon Squeezy is postponed and preserved. Its credentials and live sandbox tests
 are no longer prerequisites for this launch. Keep `LEMON_SQUEEZY_TEST_ENABLED`

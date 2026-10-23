@@ -19,6 +19,8 @@ def plan_body(seats=2,**kwargs):
 
 @pytest.fixture
 def foundation(control,monkeypatch):
+    from app.core.config import settings
+    monkeypatch.setattr(settings,'AUTH_EMAIL_CONFIGURATION_VERIFIED',True)
     client,engine,login,identities=control
     response=client.put('/api/v1/platform/plans/starter',json=plan_body())
     assert response.status_code==200,response.text

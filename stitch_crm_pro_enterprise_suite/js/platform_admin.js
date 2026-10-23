@@ -2,6 +2,7 @@ import {apiGet,apiPut} from './api.js';
 import {logout} from './auth.js';
 import {esc,heading,table,field,modal,showError,date,badge,icon,empty} from './ui.js';
 import '../css/platform-admin.css';
+import {extendPlatform} from './platform_insights.js';
 const root=document.getElementById('app');let offset=0;
 async function start(){
   await apiGet('/platform/summary');
@@ -13,13 +14,14 @@ async function start(){
   document.getElementById('next-businesses').onclick=()=>{offset+=100;refresh().catch(fail);};
   document.getElementById('grant-admin').onclick=()=>modal({title:'Grant platform access',save:'Grant Access',body:field('user_id','Existing verified user ID','number','',{required:true,min:1})+field('reason','Reason','text','',{required:true}),onSave:async v=>{await apiPut('/platform/administrators/'+Number(v.user_id),{is_active:true,reason:v.reason});await refresh();}});
   await refresh();
+  extendPlatform(refresh);
 }
-function fail(error){showError(document.getElementById('platform-error')||root,error);}
+function fail(error){const target=document.getElementById('platform-error')||root;showError(target,error);if(error.status===401||error.status===403)target.insertAdjacentHTML('beforeend','<p><a href="/platform-admin/login">Super Admin sign in and MFA</a></p>');}
 async function refresh(){
   const form=document.getElementById('business-filter');
   const [s,orgs,admins,events]=await Promise.all([apiGet('/platform/summary'),apiGet('/platform/organizations',{q:form.q.value,status:form.status.value,offset}),apiGet('/platform/administrators'),apiGet('/platform/activity')]);
   document.getElementById('platform-metrics').innerHTML=[['Registered businesses',s.businesses],['Active organizations',s.active],['Suspended organizations',s.suspended],['Expired / inactive',s.expired],['Awaiting approval',s.pending],['Active users',s.active_users],['Occupied seats',s.occupied_seats],['Active Free Pilots',s.active_pilots],['Expiring within 7 days',s.expiring_pilots]].map(([label,value])=>`<div class="card kpi"><span class="kpi-label">${esc(label)}</span><div class="kpi-value">${esc(value??'—')}</div></div>`).join('');
-  document.getElementById('business-list').innerHTML=orgs.length?table(['Business','Access','Members / seats','Plan & expiry','Actions'],orgs.map(o=>`<tr><td><strong>${esc(o.name)}</strong><small class="subtle cell-meta">${esc(o.slug)}</small></td><td>${badge(o.access_status||(o.is_suspended?'suspended':'pending'))}</td><td>${esc(o.members??'—')} / ${esc(o.seat_limit??'—')}<small class="cell-meta subtle">${esc(o.pending_invitations??0)} pending</small></td><td>${esc(o.plan||'Not configured')}<small class="cell-meta subtle">${esc(date(o.ends_at))}</small></td><td><div class="actions"><button data-details="${o.id}">Details</button><button data-pilot="${o.id}">Free Pilot</button><button data-suspend="${o.id}" class="${o.is_suspended?'':'danger'}">${o.is_suspended?'Reactivate':'Suspend'}</button></div></td></tr>`)):empty('No organizations found','Try another business name or status filter.');
+  document.getElementById('business-list').innerHTML=orgs.length?table(['Business','Access','Members / seats','Plan & expiry','Actions'],orgs.map(o=>`<tr><td><strong>${esc(o.name)}</strong><small class="subtle cell-meta">${esc(o.slug)}</small></td><td>${badge(o.access_status||(o.is_suspended?'suspended':'pending'))}</td><td>${esc(o.members??'—')} / ${esc(o.seat_limit??'—')}<small class="cell-meta subtle">${esc(o.pending_invitations??0)} pending</small></td><td>${esc(o.plan||'Not configured')}<small class="cell-meta subtle">${esc(date(o.ends_at))}</small></td><td><div class="actions"><button data-details="${o.id}">Details</button><button data-usage="${o.id}">Usage &amp; Limits</button><button data-pilot="${o.id}">Free Pilot</button><button data-suspend="${o.id}" class="${o.is_suspended?'':'danger'}">${o.is_suspended?'Reactivate':'Suspend'}</button></div></td></tr>`)):empty('No organizations found','Try another business name or status filter.');
   document.getElementById('previous-businesses').disabled=offset===0;document.getElementById('next-businesses').disabled=orgs.length<100;
   document.querySelectorAll('[data-details]').forEach(button=>button.onclick=()=>details(Number(button.dataset.details)).catch(fail));
   document.querySelectorAll('[data-suspend]').forEach(button=>button.onclick=()=>{const o=orgs.find(o=>o.id===Number(button.dataset.suspend));modal({title:o.is_suspended?'Reactivate business':'Suspend business',save:'Confirm',body:`<p class="field full">${esc(o.name)}: ${o.is_suspended?'reactivation does not renew an expired Pilot.':'active sessions for this business will be revoked. Records are preserved.'}</p>`+field('reason','Reason','text','',{required:true}),onSave:async v=>{await apiPut('/platform/organizations/'+o.id,{is_suspended:!o.is_suspended,reason:v.reason});await refresh();}});});

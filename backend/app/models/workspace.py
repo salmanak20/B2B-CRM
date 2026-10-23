@@ -1,7 +1,7 @@
 from app.models.tenant import TenantOwned
 from datetime import datetime
 from decimal import Decimal
-from sqlalchemy import String, JSON, Numeric, ForeignKey, DateTime, UniqueConstraint, Boolean, Text
+from sqlalchemy import String, JSON, Numeric, ForeignKey, DateTime, UniqueConstraint, Boolean, Text, CheckConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 from app.db.session import Base
@@ -35,6 +35,7 @@ class WorkflowRun(TenantOwned, Base):
 
 class Attachment(TenantOwned, Base):
     __tablename__="attachments"
+    __tenant_extra_args__=(CheckConstraint("upload_state IN ('pending','ready')",name='ck_attachment_upload_state'),)
     id: Mapped[int]=mapped_column(primary_key=True)
     entity: Mapped[str]=mapped_column(String(30),index=True)
     entity_id: Mapped[int]=mapped_column(index=True)
@@ -43,4 +44,5 @@ class Attachment(TenantOwned, Base):
     storage_path: Mapped[str]=mapped_column(Text,unique=True)
     content_type: Mapped[str]=mapped_column(String(100))
     size: Mapped[int]=mapped_column()
+    upload_state: Mapped[str]=mapped_column(String(10),nullable=False,default='ready',server_default='ready')
     created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),server_default=func.now())

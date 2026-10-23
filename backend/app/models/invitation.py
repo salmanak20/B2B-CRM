@@ -19,5 +19,5 @@ class OrganizationInvitation(TenantOwned, Base):
     role: Mapped[str] = mapped_column(String(50), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     invited_by: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
-    provider_user_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    provider_user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

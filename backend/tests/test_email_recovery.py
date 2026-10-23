@@ -16,6 +16,7 @@ from tests.utils import create_user
 
 @pytest.fixture
 def recovery(client, db, monkeypatch):
+    monkeypatch.setattr(settings,'AUTH_EMAIL_CONFIGURATION_VERIFIED',True)
     from app.api.routes import auth
     from app.core import sessions
     monkeypatch.setattr(settings, 'AUTH_PROVIDER', 'supabase')

@@ -166,8 +166,10 @@ def run_lead_workflows(db,lead):
             with db.begin_nested():
                 db.add(task);db.flush();db.add(WorkflowRun(rule_id=rule.id,lead_id=lead.id,task_id=task.id));db.flush()
             db.commit()
-        except IntegrityError:
+        except IntegrityError as error:
             # The unique rule/lead key makes concurrent delivery idempotent.
+            if 'CRM_QUOTA:' in str(error.orig):
+                raise HTTPException(409,'Workflow or task limit reached. Contact platform administration.')
             continue
         notify_assignment(db,task)
 

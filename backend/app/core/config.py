@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     TENANT_ISOLATION_ENABLED: bool = False
     BUSINESS_REGISTRATION_ENABLED: bool = False
     AUTH_EMAIL_CONFIGURATION_VERIFIED: bool = False
+    PLATFORM_MFA_REQUIRED: bool = True
     LEMON_SQUEEZY_TEST_ENABLED: bool = False
     LEMON_SQUEEZY_TEST_API_KEY: str = ''
     LEMON_SQUEEZY_TEST_STORE_ID: str = ''
@@ -44,6 +45,8 @@ class Settings(BaseSettings):
         if self.AUTH_PROVIDER not in {"legacy", "supabase"}:
             raise ValueError("AUTH_PROVIDER must be legacy or supabase")
         if self.ENVIRONMENT == "production":
+            if not self.PLATFORM_MFA_REQUIRED:
+                raise ValueError('Production platform administration requires MFA')
             if self.AUTH_PROVIDER != "supabase" or not self.SUPABASE_URL or not self.SUPABASE_PUBLISHABLE_KEY:
                 raise ValueError("Production requires configured Supabase Auth")
             if self.DEBUG or not self.COOKIE_SECURE or not self.FRONTEND_URL.startswith("https://"):

@@ -30,6 +30,8 @@ jobs:
             tests: tests/test_platform_bootstrap.py tests/test_hosted_pooling.py tests/test_business_onboarding.py::test_default_and_production_rollout_gate
           - suite: platform
             tests: tests/test_platform_admin.py
+          - suite: usage
+            tests: tests/test_usage_limits.py
           - suite: payment-free
             tests: tests/test_payment_free_launch.py
           - suite: free-pilot

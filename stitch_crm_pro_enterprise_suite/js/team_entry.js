@@ -10,6 +10,7 @@ export async function createWorkspace(){
 }
 export async function enterWorkspace(){
   const platform=await apiGet('/auth/platform-access');
+  if(platform?.platform_mfa_required&&!new URLSearchParams(location.search).has('workspace')){location.assign('/platform-admin/login');return;}
   if(platform?.is_platform_admin&&!new URLSearchParams(location.search).has('workspace')){location.assign('/platform-admin');return;}
   const invitations=await apiGet('/auth/invitations');
   if(invitations.length){

@@ -67,7 +67,7 @@ def test_complete_upgrade_and_empty_saas_rollback_preserve_legacy_rows(empty_sch
         command.upgrade(config, 'head')
         with engine.connect() as db:
             assert snapshot(db) == before
-            assert db.scalar(sa.text('SELECT version_num FROM alembic_version')) == 'a1b2c3d4e507'
+            assert db.scalar(sa.text('SELECT version_num FROM alembic_version')) == 'a1b2c3d4e509'
             for name in ('organizations', 'memberships', 'subscription_plans', 'subscriptions', 'billing_checkouts', 'billing_events'):
                 assert db.scalar(sa.text(f'SELECT count(*) FROM {name}')) == 0
             for model in TenantOwned.__subclasses__():
@@ -86,5 +86,5 @@ def test_populated_billing_rollback_fails_atomically_and_recovers(empty_schema):
         command.downgrade(migration_config(), 'a1b2c3d4e506')
     command.upgrade(migration_config(), 'head')
     with engine.connect() as db:
-        assert db.scalar(sa.text('SELECT version_num FROM alembic_version')) == 'a1b2c3d4e507'
+        assert db.scalar(sa.text('SELECT version_num FROM alembic_version')) == 'a1b2c3d4e509'
         assert db.scalar(sa.text('SELECT count(*) FROM billing_events')) == 1

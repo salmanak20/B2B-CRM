@@ -27,12 +27,13 @@ def inventory():
 
 def business_row(db,row):
     from app.services.subscriptions import usage
+    from app.services.usage import seat_limit
     org,sub,plan,status=row
     active,pending=usage(db,org.id)
     return dict(id=org.id,name=org.name,slug=org.slug,is_suspended=org.is_suspended,
         created_at=org.created_at,access_status=status,members=active,pending_invitations=pending,
-        seat_limit=plan.seat_limit if plan and sub.enforcement_enabled else None,
-        plan=plan.name if plan else None,ends_at=sub.ends_at if sub else None)
+        seat_limit=seat_limit(sub,plan) if plan and sub.enforcement_enabled else None,
+        plan=plan.name if plan else None,starts_at=sub.starts_at if sub else None,ends_at=sub.ends_at if sub else None)
 
 router=APIRouter(prefix='/platform',tags=['platform'])
 def platform_user(db:SessionDep,request:Request,user:CurrentUser):return authorize(db,request,user)

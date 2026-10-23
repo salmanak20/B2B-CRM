@@ -49,12 +49,13 @@ class SubscriptionInput(BaseModel):
         return self
 
 def summary(db,org):
+    from app.services.usage import seat_limit
     sub=current(db,org);active,pending=usage(db,org)
     plan=db.get(SubscriptionPlan,sub.plan_id) if sub else None
     enforced=bool(sub and sub.enforcement_enabled)
     from app.services.lemon_squeezy import available
     return {'access_status':('active' if live(sub) else 'expired_or_inactive') if sub and plan.code==PILOT_CODE else None,'can_manage_billing':False,'provider_status':sub.provider_status if sub else None,'test_billing_available':available(),'plan':plan_data(plan) if plan else None,'subscription':{k:getattr(sub,k) for k in ('status','starts_at','ends_at','enforcement_enabled')} if sub else None,
-        'seats':{'active':active,'pending':pending,'limit':plan.seat_limit if enforced else None},
+        'seats':{'active':active,'pending':pending,'limit':seat_limit(sub,plan) if enforced else None},
         'entitlements':{f:(not enforced or (live(sub) and plan.entitlements.get(f,False))) for f in FEATURES},'billing_available':False}
 
 @router.get('/subscription/plans')
@@ -78,7 +79,8 @@ def configure_plan(code:Literal['starter','business','enterprise','free_pilot'],
         orgs=list(db.scalars(select(Subscription.organization_id).where(Subscription.plan_id==plan.id,Subscription.enforcement_enabled.is_(True)).order_by(Subscription.organization_id)))
         for org in orgs:
             db.scalar(select(Organization).where(Organization.id==org).with_for_update())
-            validate_capacity(db,org,body.seat_limit)
+            subscription=current(db,org)
+            validate_capacity(db,org,(subscription.resource_limits or {}).get('seats',body.seat_limit))
     else:
         plan=SubscriptionPlan(code=code);db.add(plan)
     values=body.model_dump(exclude={'reason'})
@@ -125,7 +127,8 @@ def configure_pilot(db,admin,org,plan,sub,body):
         Membership.user_id==body.approved_owner_id,Membership.role=='owner',Membership.is_active.is_(True),Membership.removed_at.is_(None)))
     if not owner:raise HTTPException(422,'Approve an existing active organization owner; no ownership is created')
     verify_target(db,body.approved_owner_id)
-    validate_capacity(db,org.id,5)
+    from app.services.usage import seat_limit, PILOT_LIMITS
+    validate_capacity(db,org.id,seat_limit(sub,plan) if sub else 5)
     if sub and (sub.plan_id!=plan.id or sub.provider_status is not None or sub.external_subscription_id):
         raise HTTPException(409,'Existing customer subscription cannot be replaced by a Pilot')
     if body.pilot_action=='activate' and sub:
@@ -136,7 +139,7 @@ def configure_pilot(db,admin,org,plan,sub,body):
             raise HTTPException(409,'Pilot changed; reload before explicitly renewing')
     elif body.expected_ends_at:
         raise HTTPException(422,'Initial activation does not take a previous expiry')
-    if not sub:sub=Subscription(organization_id=org.id);db.add(sub)
+    if not sub:sub=Subscription(organization_id=org.id,resource_limits=dict(PILOT_LIMITS));db.add(sub)
     now=utcnow()
     sub.plan_id=plan.id;sub.status='active';sub.enforcement_enabled=True
     sub.starts_at=now;sub.ends_at=now+timedelta(days=30)

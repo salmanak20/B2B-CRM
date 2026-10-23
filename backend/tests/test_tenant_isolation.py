@@ -48,6 +48,7 @@ def api(isolation_engine,monkeypatch):
     with isolation_engine.begin() as connection:
         names=",".join('"'+n+'"' for n in sa.inspect(connection).get_table_names() if n!="alembic_version")
         connection.execute(sa.text(f"TRUNCATE {names} RESTART IDENTITY CASCADE"))
+        connection.execute(sa.text('INSERT INTO usage_instrumentation(id) VALUES (1)'))
     with Session(isolation_engine) as db:
         seed_db(db)
         roles={r.name:r for r in db.scalars(sa.select(Role))}
