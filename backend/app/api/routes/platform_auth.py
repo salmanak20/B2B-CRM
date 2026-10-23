@@ -38,10 +38,17 @@ def enroll(db:SessionDep,request:Request,response:Response,user:CurrentUser):
     identity=auth_request('GET','/user',token=decrypt(session.access_token))
     if any(f.get('status')=='verified' for f in identity.get('factors',[])):
         raise HTTPException(409,'Use an existing verified factor; additional factors require separate review')
+    pending=[f for f in identity.get('factors',[]) if f.get('status')=='unverified' and f.get('factor_type')=='totp']
+    for factor in pending:
+        # The authenticated user explicitly starts/restarts unfinished setup.
+        # Never remove a verified factor or use a privileged admin token here.
+        auth_request('DELETE','/factors/'+str(UUID(factor['id'])),token=decrypt(session.access_token))
+    if pending:
+        audit(db,user.id,'platform_mfa_unfinished_reset',user.id,'User restarted unfinished authenticator enrollment')
     result=auth_request('POST','/factors',{'factor_type':'totp','friendly_name':'CRM Platform Authenticator'},token=decrypt(session.access_token))
     audit(db,user.id,'platform_mfa_enrollment_started',user.id,'User requested authenticator enrollment')
     db.commit()
-    return {'id':result['id'],'secret':result['totp']['secret'],'uri':result['totp']['uri']}
+    return {'id':result['id'],'secret':result['totp']['secret'],'uri':result['totp']['uri'],'qr_code':result['totp'].get('qr_code')}
 
 
 class Verification(BaseModel):

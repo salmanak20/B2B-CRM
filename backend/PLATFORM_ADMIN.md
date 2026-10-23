@@ -34,6 +34,9 @@ only; tenant audits, leads, contacts, deals and files are not exposed.
 server cookies, followed by TOTP enrollment/challenge. Every platform operation
 requires the bound active platform identity, a provider-validated token at AAL2,
 and an existing verified factor. Production configuration refuses disabled MFA.
+Enrollment includes a private QR code and manual key. A user-requested restart
+replaces only their unverified TOTP factors using their own provider token;
+verified factors cannot be removed through this flow.
 No token is returned to browser storage. Password changes and all-session
 revocation are available from Platform Settings. Login/enrollment/verification and
 session revocation use existing rate-limit, session and platform-audit services.

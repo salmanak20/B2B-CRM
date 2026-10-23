@@ -242,3 +242,29 @@ def test_mfa_required_for_every_platform_operation_and_provider_sessions(control
     assert client.get('/api/v1/platform/summary').status_code==200
     assert client.post('/api/v1/auth/platform/sessions/revoke').status_code==200
     assert client.get('/api/v1/platform/summary').status_code==401
+
+
+def test_mfa_restart_only_replaces_unverified_self_factors(control,monkeypatch):
+    client,_,_,ids=control
+    from app.services import platform
+    from app.core import sessions
+    from app.api.routes import platform_auth
+    factor='00000000-0000-0000-0000-000000000099'
+    identity={**ids[3],'factors':[{'id':factor,'status':'unverified','factor_type':'totp'}]}
+    calls=[]
+    def provider(method,path,data=None,**kwargs):
+        calls.append((method,path,kwargs))
+        if path=='/user':return identity
+        if method=='DELETE':
+            assert path=='/factors/'+factor and kwargs.get('token') and not kwargs.get('admin')
+            return {}
+        if method=='POST' and path=='/factors':return {'id':factor,'totp':{'secret':'isolated-fixture-only','uri':'otpauth://totp/fixture','qr_code':'<svg xmlns="http://www.w3.org/2000/svg"/>'}}
+        raise AssertionError(path)
+    for module in (platform,sessions,platform_auth):monkeypatch.setattr(module,'auth_request',provider)
+    response=client.post('/api/v1/auth/platform/mfa/enroll')
+    assert response.status_code==200 and response.json()['qr_code'].startswith('<svg')
+    assert any(method=='DELETE' for method,path,kwargs in calls)
+    identity['factors'][0]['status']='verified'
+    calls.clear()
+    assert client.post('/api/v1/auth/platform/mfa/enroll').status_code==409
+    assert not any(method=='DELETE' for method,path,kwargs in calls)

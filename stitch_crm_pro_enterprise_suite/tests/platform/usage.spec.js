@@ -48,3 +48,24 @@ test('usage insights edit finite quotas with stale update protection',async({pag
   expect(writes[0]).toEqual({limits:{...limits,leads:2000},expected_limits:limits,reason:'Approved capacity increase'});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
 });
+
+test('unfinished authenticator setup shows a private QR and allows an explicit restart',async({page})=>{
+  let enrollments=0;
+  await page.route('**/api/v1/**',async route=>{
+    const path=new URL(route.request().url()).pathname;
+    if(path.endsWith('/login'))return route.fulfill({json:{user:{id:3}}});
+    if(path.endsWith('/mfa'))return route.fulfill({json:{ready:false,factors:[]}});
+    if(path.endsWith('/mfa/enroll')){enrollments++;return route.fulfill({json:{id:'00000000-0000-0000-0000-000000000003',secret:'isolated-fixture-only',qr_code:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10"/></svg>'}});}
+    return route.fulfill({json:[]});
+  });
+  await page.goto('/platform-admin/login');
+  await page.getByLabel('Email').fill('operator@example.com');
+  await page.getByLabel('Password').fill(process.env.E2E_PASSWORD);
+  await page.getByRole('button',{name:'Continue securely'}).click();
+  await page.getByRole('button',{name:'Set up authenticator',exact:true}).click();
+  await expect(page.getByRole('img',{name:'Private authenticator setup QR code'})).toBeVisible();
+  await expect(page.getByText('Use the code from this new account',{exact:false})).toBeVisible();
+  await page.getByRole('button',{name:'Restart unfinished setup'}).click();
+  await expect.poll(()=>enrollments).toBe(2);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
+});
