@@ -891,6 +891,8 @@ has a production workspace membership or platform-admin grant. The database is
 PostgreSQL 17.6 at Alembic revision `f8b3015a0001`. An email alone is not an
 identity or authorization predicate. No account, identity, membership, link,
 workspace, role, setting, or data was changed; no CRM rows were removed.
+The production `/login` route returns HTTP 200, while `/platform-admin/login`
+currently returns Vercel HTTP 404.
 
 ### Implementation review against the requested roles
 
