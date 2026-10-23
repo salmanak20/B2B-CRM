@@ -13,6 +13,7 @@ class AuthSession(Base):
     access_token: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     refresh_token: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     recovery: Mapped[bool] = mapped_column(Boolean, default=False)
+    active_organization_id: Mapped[Optional[int]] = mapped_column(ForeignKey("organizations.id"), nullable=True)
 
 class RateBucket(Base):
     __tablename__ = "rate_buckets"

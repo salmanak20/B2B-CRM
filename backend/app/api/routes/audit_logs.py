@@ -6,7 +6,8 @@ from app.crud import audit_log as crud_audit_log
 
 router = APIRouter()
 
-@router.get("/", response_model=List[AuditLogResponse], dependencies=[Depends(require_permission("audit_logs.read"))])
+@router.get("", response_model=List[AuditLogResponse], dependencies=[Depends(require_permission("audit_logs.read"))])
+@router.get("/", response_model=List[AuditLogResponse], dependencies=[Depends(require_permission("audit_logs.read"))], include_in_schema=False)
 def get_audit_logs(
     db: SessionDep,
     current_user: CurrentActiveUser,

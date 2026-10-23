@@ -1,10 +1,11 @@
+from app.models.tenant import TenantOwned
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, Boolean, ForeignKey, DateTime, Integer
 from sqlalchemy.sql import func
 from datetime import datetime
 from app.db.session import Base
 
-class Notification(Base):
+class Notification(TenantOwned, Base):
     __tablename__ = "notifications"
     
     id: Mapped[int] = mapped_column(primary_key=True, index=True)

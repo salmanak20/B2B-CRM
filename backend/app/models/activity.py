@@ -1,3 +1,4 @@
+from app.models.tenant import TenantOwned
 from datetime import datetime
 from typing import Optional
 
@@ -8,9 +9,9 @@ from sqlalchemy.sql import func
 from app.db.session import Base
 
 
-class Activity(Base):
+class Activity(TenantOwned, Base):
     __tablename__ = "activities"
-    __table_args__ = (
+    __tenant_extra_args__ = (
         CheckConstraint(
             "type IN ('call', 'email', 'meeting', 'note', 'follow_up')",
             name="ck_activities_type_values",
@@ -32,7 +33,7 @@ class Activity(Base):
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="activities")
-    company: Mapped[Optional["Company"]] = relationship(back_populates="activities")
-    contact: Mapped[Optional["Contact"]] = relationship(back_populates="activities")
-    lead: Mapped[Optional["Lead"]] = relationship(back_populates="activities")
-    deal: Mapped[Optional["Deal"]] = relationship(back_populates="activities")
+    company: Mapped[Optional["Company"]] = relationship(foreign_keys="Activity.company_id", back_populates="activities")
+    contact: Mapped[Optional["Contact"]] = relationship(foreign_keys="Activity.contact_id", back_populates="activities")
+    lead: Mapped[Optional["Lead"]] = relationship(foreign_keys="Activity.lead_id", back_populates="activities")
+    deal: Mapped[Optional["Deal"]] = relationship(foreign_keys="Activity.deal_id", back_populates="activities")

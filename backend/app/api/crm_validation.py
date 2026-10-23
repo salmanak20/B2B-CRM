@@ -17,6 +17,9 @@ def validate_crm_relationships(
     lead_id: int | None,
     deal_id: int | None,
 ) -> None:
+    from app.db.tenant_session import organization_id
+    if organization_id(db) != current_user.organization_id:
+        raise HTTPException(403, "Invalid tenant context")
     company = None
     contact = None
     lead = None

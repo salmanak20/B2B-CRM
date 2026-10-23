@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import model_validator
+from pydantic import model_validator,Field
 from pathlib import Path
 
 class Settings(BaseSettings):
@@ -29,12 +29,24 @@ class Settings(BaseSettings):
     LOGIN_RATE_LIMIT: int = 10
     RATE_WINDOW_SECONDS: int = 900
     DUE_NOTIFICATIONS_ENABLED: bool = False
+    TENANT_ISOLATION_ENABLED: bool = False
+    BUSINESS_REGISTRATION_ENABLED: bool = False
+    AUTH_EMAIL_CONFIGURATION_VERIFIED: bool = False
+    PLATFORM_MFA_REQUIRED: bool = True
+    LEMON_SQUEEZY_TEST_ENABLED: bool = False
+    LEMON_SQUEEZY_TEST_API_KEY: str = ''
+    LEMON_SQUEEZY_TEST_STORE_ID: str = ''
+    LEMON_SQUEEZY_TEST_WEBHOOK_SECRET: str = ''
+    LEMON_SQUEEZY_TEST_PLAN_IDS: dict[str,dict[str,str]] = {}
+    LEMON_SQUEEZY_GRACE_DAYS: int = Field(7,ge=0,le=30)
 
     @model_validator(mode="after")
     def production_safety(self):
         if self.AUTH_PROVIDER not in {"legacy", "supabase"}:
             raise ValueError("AUTH_PROVIDER must be legacy or supabase")
         if self.ENVIRONMENT == "production":
+            if not self.PLATFORM_MFA_REQUIRED:
+                raise ValueError('Production platform administration requires MFA')
             if self.AUTH_PROVIDER != "supabase" or not self.SUPABASE_URL or not self.SUPABASE_PUBLISHABLE_KEY:
                 raise ValueError("Production requires configured Supabase Auth")
             if self.DEBUG or not self.COOKIE_SECURE or not self.FRONTEND_URL.startswith("https://"):
@@ -52,7 +64,8 @@ class Settings(BaseSettings):
         env_file=str(Path(__file__).resolve().parents[2]/".env"),
         env_file_encoding="utf-8",
         case_sensitive=True,
-        hide_input_in_errors=True
+        hide_input_in_errors=True,
+        env_ignore_empty=True
     )
 
 settings = Settings()

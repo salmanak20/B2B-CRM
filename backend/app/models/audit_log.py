@@ -1,10 +1,11 @@
+from app.models.tenant import TenantOwned
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, Integer, ForeignKey, DateTime
 from sqlalchemy.sql import func
 from datetime import datetime
 from app.db.session import Base
 
-class AuditLog(Base):
+class AuditLog(TenantOwned, Base):
     __tablename__ = "audit_logs"
     
     id: Mapped[int] = mapped_column(primary_key=True, index=True)

@@ -28,7 +28,16 @@ def ensure_can_modify_crm_record(record_owner_id: int, current_user: User) -> No
         raise HTTPException(status_code=403, detail="Not enough permissions to modify this record")
 
 
+def validate_representative(db,current_user,user_id):
+    from app.db.tenant_session import require_member
+    member=require_member(db,user_id)
+    if current_user.membership.role=="sales_manager" and user_id!=current_user.id and member.role!="sales_rep":
+        raise HTTPException(403,"Managers may assign only authorized sales representatives")
+    return member
+
+
 def resolve_owner_id(db: Session, current_user: User, requested_owner_id: int | None) -> int:
+    validate_representative(db,current_user,requested_owner_id or current_user.id)
     if requested_owner_id is None or requested_owner_id == current_user.id:
         return current_user.id
     if not can_manage_all_crm_records(current_user):

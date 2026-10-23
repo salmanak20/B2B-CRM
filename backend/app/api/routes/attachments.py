@@ -1,7 +1,8 @@
 import uuid
 from pathlib import PurePath
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Response
+from urllib.parse import quote
 from sqlalchemy import select
 from app.api.deps import SessionDep, CurrentActiveUser, require_permission
 from app.api.routes.workspace import checked_record
@@ -13,6 +14,7 @@ router=APIRouter()
 MAX_BYTES=3*1024*1024
 
 def storage(method,path,**kwargs):
+    raw=kwargs.pop('raw',False)
     if not settings.SUPABASE_URL or not settings.SUPABASE_SERVICE_ROLE_KEY:
         raise HTTPException(503,"Attachment storage is not configured")
     headers={"apikey":settings.SUPABASE_SERVICE_ROLE_KEY,"Authorization":"Bearer "+settings.SUPABASE_SERVICE_ROLE_KEY,**kwargs.pop('headers',{})}
@@ -20,7 +22,7 @@ def storage(method,path,**kwargs):
         response=httpx.request(method,settings.SUPABASE_URL.rstrip('/')+'/storage/v1'+path,headers=headers,timeout=30,**kwargs)
     except httpx.HTTPError:raise HTTPException(503,"Storage service is unavailable")
     if response.is_error:raise HTTPException(502,"Unable to complete storage operation")
-    return response.json() if response.content else {}
+    return response.content if raw else (response.json() if response.content else {})
 
 @router.get('/attachments/config')
 def config(current_user:CurrentActiveUser):
@@ -45,10 +47,25 @@ async def upload(entity:str,record_id:int,db:SessionDep,current_user:CurrentActi
         try:content.decode('utf-8')
         except UnicodeDecodeError:raise HTTPException(422,"Text files must be UTF-8")
         if b'\x00' in content:raise HTTPException(422,"Invalid text content")
-    key=f'{entity}/{record_id}/{uuid.uuid4().hex}{ext}'
-    storage('POST',f'/object/{settings.SUPABASE_STORAGE_BUCKET}/{key}',content=content,headers={'Content-Type':types[ext],'x-upsert':'false'})
+    key=f'{current_user.organization_id}/{entity}/{record_id}/{uuid.uuid4().hex}{ext}'
     record=Attachment(entity=entity,entity_id=record_id,uploaded_by=current_user.id,name=PurePath(file.filename).name[:255],storage_path=key,content_type=types[ext],size=len(content))
+    # Durable reservation before any bytes: a crash/timeout cannot refund quota
+    # for an object that might already exist at the provider.
+    record.upload_state='pending'
     db.add(record);db.commit();db.refresh(record)
+    try:
+        storage('POST',f'/object/{settings.SUPABASE_STORAGE_BUCKET}/{key}',content=content,headers={'Content-Type':types[ext],'x-upsert':'false'})
+        record.upload_state='ready'
+        db.commit()
+    except Exception:
+        db.rollback()
+        try:
+            storage('DELETE',f'/object/{settings.SUPABASE_STORAGE_BUCKET}',json={'prefixes':[key]})
+        except HTTPException:
+            raise HTTPException(503,'Upload is pending because Storage cleanup could not be confirmed. Its quota remains reserved. Refresh attachments and delete the pending upload to retry cleanup.')
+        db.delete(record);db.commit()
+        raise
+    db.refresh(record)
     log_event(db,"Attachment Uploaded",current_user.id,entity,record_id,"Private attachment uploaded")
     db.refresh(record)
     return record
@@ -58,8 +75,18 @@ def download(attachment_id:int,db:SessionDep,current_user:CurrentActiveUser):
     record=db.get(Attachment,attachment_id)
     if not record:raise HTTPException(404,"Attachment not found")
     checked_record(db,record.entity,record.entity_id,current_user)
-    result=storage('POST',f'/object/sign/{settings.SUPABASE_STORAGE_BUCKET}/{record.storage_path}',json={'expiresIn':60,'download':record.name})
-    return {'url':settings.SUPABASE_URL.rstrip('/')+'/storage/v1'+result['signedURL']}
+    if record.upload_state!='ready':raise HTTPException(409,'This upload is pending; remove it to retry cleanup before uploading again')
+    return {'url':f'/api/v1/attachments/{record.id}/content'}
+
+@router.get('/attachments/{attachment_id}/content')
+def content(attachment_id:int,db:SessionDep,current_user:CurrentActiveUser):
+    record=db.get(Attachment,attachment_id)
+    if not record:raise HTTPException(404,"Attachment not found")
+    checked_record(db,record.entity,record.entity_id,current_user)
+    if record.upload_state!='ready':raise HTTPException(409,'This upload is pending; remove it to retry cleanup before uploading again')
+    data=storage('GET',f'/object/authenticated/{settings.SUPABASE_STORAGE_BUCKET}/{record.storage_path}',raw=True)
+    return Response(data,media_type=record.content_type,headers={
+        'Cache-Control':'no-store','Content-Disposition':"attachment; filename*=UTF-8''"+quote(record.name,safe='')})
 
 @router.delete('/attachments/{attachment_id}')
 def remove(attachment_id:int,db:SessionDep,current_user:CurrentActiveUser):

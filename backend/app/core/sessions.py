@@ -31,10 +31,25 @@ def decrypt(value):
     except InvalidToken:
         raise HTTPException(401, "Session expired. Please sign in again.")
 
-def create_session(db, response, user, remember=False, provider=None, recovery=False):
+def create_session(db, response, user, remember=False, provider=None, recovery=False, platform=False):
+    from app.models.membership import Membership
+    from app.models.organization import Organization
     raw = secrets.token_urlsafe(48)
     seconds = (settings.REMEMBER_DAYS * 86400 if remember else settings.SESSION_HOURS * 3600)
     session = AuthSession(id=session_key(raw), user_id=user.id, expires_at=utcnow()+timedelta(seconds=seconds), recovery=recovery)
+    if settings.TENANT_ISOLATION_ENABLED and not platform:
+        choices = db.scalars(select(Membership).join(Organization).where(Membership.user_id==user.id, Membership.is_active.is_(True), Organization.is_suspended.is_(False))).all()
+        from app.services.subscriptions import require_pilot_access
+        eligible=[]
+        for member in choices:
+            try:require_pilot_access(db,member.organization_id)
+            except HTTPException as error:
+                if error.status_code!=403:raise
+            else:eligible.append(member)
+        choices=eligible
+        if len(choices)==1:
+            session.active_organization_id=choices[0].organization_id
+            db.info.update(organization_id=session.active_organization_id, actor_id=user.id)
     if provider:
         set_provider_tokens(session, provider)
     db.add(session)

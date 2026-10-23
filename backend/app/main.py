@@ -83,12 +83,27 @@ async def add_security_headers(request: Request, call_next):
 
 @app.exception_handler(IntegrityError)
 async def integrity_error(request:Request,error:IntegrityError):
+    # Only expose known resource identifiers, never database statement/values.
+    from app.services.usage import RESOURCES
+    message=str(error.orig)
+    for resource in RESOURCES:
+        if 'CRM_QUOTA:'+resource in message:
+            return JSONResponse({'detail':resource.replace('_',' ').capitalize()+' limit reached or not configured. Contact platform administration.'},status_code=409)
     return JSONResponse({"detail":"This change conflicts with an existing or related record."},status_code=409)
 
 @app.exception_handler(RequestValidationError)
 async def validation_error(request:Request,error:RequestValidationError):
     # Do not echo submitted passwords, recovery tokens or business values in errors.
     return JSONResponse({"detail":[{"loc":e["loc"],"msg":e["msg"],"type":e["type"]} for e in error.errors()]},status_code=422)
+
+from app.api.routes import platform, subscriptions, billing
+from app.api.routes import usage
+app.include_router(usage.router, prefix='/api/v1')
+from app.api.routes import platform_auth
+app.include_router(platform_auth.router, prefix='/api/v1')
+app.include_router(billing.router, prefix='/api/v1')
+app.include_router(subscriptions.router, prefix='/api/v1')
+app.include_router(platform.router, prefix='/api/v1')
 
 app.include_router(health.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
@@ -115,6 +130,8 @@ app.include_router(workspace.router,prefix="/api/v1",tags=["Workspace"])
 app.include_router(conversions.router,prefix="/api/v1",tags=["Lead conversion"])
 app.include_router(imports.router,prefix="/api/v1",tags=["CSV import"])
 app.include_router(attachments.router,prefix="/api/v1",tags=["Attachments"])
+from app.api.routes import team
+app.include_router(team.router,prefix="/api/v1")
 
 @app.get("/")
 def root():
