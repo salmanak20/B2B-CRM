@@ -866,3 +866,85 @@ identity/delivery proof. Local verification passed: 21 PostgreSQL platform tests
 24 Free Pilot tests, 14 desktop/mobile browser contracts, production build and
 shipped-asset checks. The platform suite has its own isolated CI matrix job. Final
 commit CI is verified separately after push; completed audits are not repeated.
+
+## Confirmed production account requirements and read-only preflight — 2026-10-23
+
+The requested production scope is:
+
+- Platform Super Admin: `salmanyousafzai736@gmail.com`, with access to manage all
+  business accounts, approve/suspend businesses, view per-business usage and
+  activity insights, and configure per-business resource limits.
+- Initial Business Owner: `salmanstudio.dev@gmail.com`, for a private workspace
+  named **Salman Studio**. The owner manages only that workspace and its team;
+  cross-business private data remains inaccessible.
+- Keep `https://b2-b-crm.vercel.app`; no custom domain. Target Supabase Site URL
+  `https://b2-b-crm.vercel.app` and the sole login redirect
+  `https://b2-b-crm.vercel.app/login`. Public registration stays disabled; new
+  accounts are provisioned or approved only through the authorized admin process.
+
+Production account preflight was read-only against the `b2b-crm` Supabase project
+on 2026-10-23. For **each** requested email, the active Auth identity count was 0,
+the matching `public.users` CRM account count was 0, and the linked CRM account
+count was 0. Production has no `organizations`, `memberships`,
+`platform_administrators`, or `subscriptions` tables, so neither email currently
+has a production workspace membership or platform-admin grant. The database is
+PostgreSQL 17.6 at Alembic revision `f8b3015a0001`. An email alone is not an
+identity or authorization predicate. No account, identity, membership, link,
+workspace, role, setting, or data was changed; no CRM rows were removed.
+
+### Implementation review against the requested roles
+
+- The feature branch implements a TOTP/AAL2-protected platform admin console.
+  It lists businesses and access states, registers an existing verified owner as
+  a suspended pending business, approves/renews enforced Free Pilots, suspends or
+  reactivates businesses, reviews members/invitations, and configures finite
+  per-business quotas. `/platform/organizations/{id}/usage` reports that
+  business's current usage, recorded activity trends, and last recorded activity;
+  trends begin only after instrumentation, and API request counts are unavailable.
+  `/platform/activity` is the separate global platform-action audit. No detailed
+  per-business CRM activity ledger is exposed to Super Admin.
+- The owner-scoped team API supports listing, role/access changes, removal,
+  invitations, and cancellation. Authorization uses the active organization and
+  restricts team operations to owner/admin roles; tenant-isolation and cross-tenant
+  tests cover unauthorized reads/writes and organization spoofing. Business owners
+  do not receive platform access. New-recipient email delivery remains unavailable
+  until a verified delivery service is approved/configured; with delivery disabled,
+  new invitations remain pending without creating an Auth identity. Existing
+  confirmed linked recipients can accept after signing in. Thus team management
+  authorization is implemented, but inviting newly provisioned team members is
+  not operational yet.
+- These SaaS tables and routes are not live in production. The feature migration
+  chain starts at `a1b2c3d4e501` (which follows `f8b3015a0001`) and adds tenancy,
+  administration, subscriptions, and usage controls through `a1b2c3d4e509`.
+  Legacy rows remain unmapped until a reviewed per-user, per-organization, and
+  per-record manifest is approved. `Salman Studio` must not be assigned any
+  existing records by inference.
+
+### Remaining release blockers — NO-GO retained
+
+1. Both requested accounts must be independently verified and provisioned through
+   the authorized process. Then separately approve exact Auth-to-CRM linkage,
+   the initial Super Admin grant, the explicit Salman Studio owner membership,
+   and private sign-in/MFA validation. Do not infer or merge accounts by email.
+2. Re-read and separately approve the production Auth change to the stated Site
+   URL and sole `/login` redirect, disable public signup, and retain email
+   confirmation. The last recorded production Auth check found signup enabled,
+   Site URL `http://localhost:3000`, and an empty redirect allow-list; this task
+   changed no provider settings.
+3. Complete the full recovery package: fresh encrypted PostgreSQL backup, separate
+   Auth and private-Storage recovery coverage, isolated restore validation,
+   independent backup/app-key custody, retention, RPO/RTO, and a snapshot-specific
+   preservation manifest. The prior public-only rehearsal is insufficient.
+4. Approve a write barrier and an explicit legacy mapping for every affected user,
+   organization, membership, owner, CRM row, shared pipeline/settings/workflow,
+   audit/notification record, and private attachment. Rehearse the complete
+   migration/backfill on isolated PostgreSQL 17; stop on ambiguity or mismatched
+   fingerprints. Do not run production migrations before these gates pass.
+5. Resolve verified delivery for new accounts and team invitations, keep business
+   registration closed, verify production configuration and tenant isolation,
+   then obtain separate approvals for the Auth execution, identity creation/link,
+   privilege grant, migration/backfill, PR merge, and production deployment.
+
+The requested production domain and role requirements are now recorded, but the
+release remains **NO-GO** until every gate above is met. All production checks in
+this update were read-only; all existing business data remains preserved.
