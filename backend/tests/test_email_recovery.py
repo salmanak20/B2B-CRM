@@ -78,6 +78,28 @@ def test_desktop_recovery_cookie_can_use_cross_site_secure_policy(recovery, monk
     assert all(item in cookie for item in ['HttpOnly', 'Secure', 'SameSite=none', 'Path=/api/v1/auth'])
 
 
+def test_tauri_recovery_flow_uses_secure_none_cookies(recovery, monkeypatch):
+    client, _, user, _, _ = recovery
+    monkeypatch.setattr(settings, 'COOKIE_SECURE', False)
+    origin = 'https://tauri.localhost'
+    started = client.post('/api/v1/auth/forgot-password', json={'email': user.email}, headers={'Origin': origin})
+    assert started.status_code == 200
+    recovery_state = started.cookies.get(cookie_name())
+    assert recovery_state
+    assert 'samesite=none' in started.headers['set-cookie'].lower()
+
+    exchanged = client.post(
+        '/api/v1/auth/recovery/exchange',
+        json={'code': 'valid-one-use-code'},
+        headers={'Origin': origin, 'Cookie': f'{cookie_name()}={recovery_state}'},
+    )
+    assert exchanged.status_code == 200
+    assert exchanged.json()['recovery'] is True
+    set_cookies = exchanged.headers.get_list('set-cookie')
+    assert any(settings.SESSION_COOKIE_NAME in cookie and 'samesite=none' in cookie.lower() for cookie in set_cookies)
+    assert any(cookie_name() in cookie and 'samesite=none' in cookie.lower() for cookie in set_cookies)
+
+
 def test_recovery_code_creates_restricted_session_then_password_change_revokes_it(recovery):
     client, db, _, _, calls = recovery
     initiate(recovery)

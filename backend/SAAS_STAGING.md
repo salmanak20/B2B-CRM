@@ -54,7 +54,12 @@ staging PostgreSQL, Supabase Auth and private Storage, with a strong staging
 `JWT_SECRET_KEY`. Configure Preview-only `DATABASE_URL`, `ENVIRONMENT`,
 `AUTH_PROVIDER`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`,
 `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET`, `FRONTEND_URL`,
-`CORS_ORIGINS`, `COOKIE_SECURE=true`, `DEBUG=false`, and explicit feature flags.
+`CORS_ORIGINS`, `DESKTOP_APP_ORIGINS=["https://tauri.localhost"]`,
+`COOKIE_SECURE=true`, `DEBUG=false`, and explicit feature flags. Desktop
+session and recovery cookies use `SameSite=None` only when the exact request
+Origin matches `DESKTOP_APP_ORIGINS`; web sessions keep `SESSION_COOKIE_SAMESITE`
+(`Lax` by default). Credentialed CORS and unsafe-request Origin checks include
+the explicit desktop origin. Never use a wildcard origin.
 Use HTTPS and exact staging origins/redirects, host-only HttpOnly cookies and
 verified private bucket access. Never expose privileged keys as `VITE_*`.
 

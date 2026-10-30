@@ -7,6 +7,7 @@ from uuid import UUID
 from sqlalchemy import select, delete, func
 from app.api.deps import SessionDep, CurrentActiveUser, CurrentUser, active_membership, TenantUser
 from app.core.config import settings
+from app.core.cookies import session_cookie_samesite, session_cookie_secure
 from app.core.security import verify_password, create_access_token
 from app.core.provider import auth_request
 from app.core.sessions import create_session, current_session, session_key, decrypt, revoke_user_sessions
@@ -151,7 +152,7 @@ def login(db:SessionDep,request:Request,response:Response,form:OAuth2PasswordReq
     previous=request.cookies.get(settings.SESSION_COOKIE_NAME)
     if previous:
         db.execute(delete(AuthSession).where(AuthSession.id==session_key(previous)))
-    create_session(db,response,user,remember,provider,platform=platform_login)
+    create_session(db,response,user,request,remember,provider,platform=platform_login)
     if platform_login:
         from app.services.platform import audit
         audit(db,user.id,'platform_password_login',user.id,'Password authentication; MFA required before platform operations')
@@ -220,7 +221,7 @@ def logout(db:SessionDep,request:Request,response:Response):
                     pass
             db.delete(session)
             db.commit()
-    response.delete_cookie(settings.SESSION_COOKIE_NAME,path="/api",secure=settings.COOKIE_SECURE,httponly=True,samesite=settings.SESSION_COOKIE_SAMESITE.lower())
+    response.delete_cookie(settings.SESSION_COOKIE_NAME,path="/api",secure=session_cookie_secure(request),httponly=True,samesite=session_cookie_samesite(request))
 
 @router.post("/forgot-password")
 def forgot(body:EmailRequest,db:SessionDep,request:Request,response:Response):
@@ -236,7 +237,7 @@ def forgot(body:EmailRequest,db:SessionDep,request:Request,response:Response):
     except HTTPException as error:
         if error.status_code>=500 or error.status_code==429:
             raise
-    save_recovery(response,state)
+    save_recovery(response,state,request)
     return {"message":"If this account exists, a recovery email will arrive shortly. Open its latest link in this same browser to set your password."}
 
 @router.post("/recovery/exchange")
@@ -252,8 +253,8 @@ def exchange_recovery(body:RecoveryCode,db:SessionDep,request:Request,response:R
     if str(identity.get("email","")).lower()!=state["email"]:
         raise HTTPException(401,"Recovery account does not match the requested account")
     user=linked_user(db,identity)
-    create_session(db,response,user,provider=data,recovery=True)
-    clear_recovery(response)
+    create_session(db,response,user,request,provider=data,recovery=True)
+    clear_recovery(response,request)
     return {"message":"Link verified.","recovery":True}
 
 @router.post("/recovery/verify")
@@ -264,7 +265,7 @@ def recovery(body:RecoveryVerify,db:SessionDep,request:Request,response:Response
     data=auth_request("POST","/verify",{"token_hash":body.token_hash,"type":body.type})
     user=linked_user(db,data.get("user",{}))
     recovery=body.type in {"recovery","invite"}
-    create_session(db,response,user,provider=data,recovery=recovery)
+    create_session(db,response,user,request,provider=data,recovery=recovery)
     return {"message":"Link verified.","recovery":recovery}
 
 @router.post("/password")
@@ -286,5 +287,5 @@ def change_password(body:PasswordChange,db:SessionDep,request:Request,response:R
     auth_request("POST","/logout?scope=global",token=decrypt(session.access_token))
     revoke_user_sessions(db,current_user.id)
     log_event(db,"Password Changed",current_user.id,"User",current_user.id,"Password changed using identity provider")
-    response.delete_cookie(settings.SESSION_COOKIE_NAME,path="/api",secure=settings.COOKIE_SECURE,httponly=True,samesite=settings.SESSION_COOKIE_SAMESITE.lower())
+    response.delete_cookie(settings.SESSION_COOKIE_NAME,path="/api",secure=session_cookie_secure(request),httponly=True,samesite=session_cookie_samesite(request))
     return {"message":"Password updated. Please sign in again."}

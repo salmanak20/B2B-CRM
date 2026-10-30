@@ -53,7 +53,7 @@ else:
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=list(dict.fromkeys([*settings.CORS_ORIGINS, *settings.DESKTOP_APP_ORIGINS])),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -64,7 +64,7 @@ app.add_middleware(
 async def add_security_headers(request: Request, call_next):
     origin=request.headers.get("origin")
     if request.method not in {"GET","HEAD","OPTIONS"}:
-        allowed=set(settings.CORS_ORIGINS)|{settings.FRONTEND_URL.rstrip('/')}
+        allowed=set(settings.CORS_ORIGINS)|set(settings.DESKTOP_APP_ORIGINS)|{settings.FRONTEND_URL.rstrip('/')}
         if origin and origin.rstrip('/') not in allowed:
             return JSONResponse({"detail":"Request origin is not permitted"},status_code=403)
         if request.cookies.get(settings.SESSION_COOKIE_NAME) and not origin and settings.ENVIRONMENT=="production":

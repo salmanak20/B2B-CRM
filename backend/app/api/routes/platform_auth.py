@@ -8,6 +8,7 @@ from app.core.sessions import decrypt, set_provider_tokens, revoke_user_sessions
 from app.core.provider import auth_request
 from app.core.rate_limit import limit_auth
 from app.core.config import settings
+from app.core.cookies import session_cookie_samesite, session_cookie_secure
 
 router=APIRouter(prefix='/auth/platform',tags=['Platform authentication'])
 
@@ -82,5 +83,5 @@ def revoke(db:SessionDep,request:Request,response:Response,user:CurrentUser):
     auth_request('POST','/logout?scope=global',token=decrypt(session.access_token))
     audit(db,user.id,'platform_sessions_revoked',user.id,'User revoked all provider and application sessions')
     revoke_user_sessions(db,user.id)
-    response.delete_cookie(settings.SESSION_COOKIE_NAME,path='/api',secure=settings.COOKIE_SECURE,httponly=True,samesite=settings.SESSION_COOKIE_SAMESITE.lower())
+    response.delete_cookie(settings.SESSION_COOKIE_NAME,path='/api',secure=session_cookie_secure(request),httponly=True,samesite=session_cookie_samesite(request))
     return {'ok':True}
