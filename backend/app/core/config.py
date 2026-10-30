@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     ENVIRONMENT: str = "development"
     CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000", "https://b2-b-crm.vercel.app", "http://127.0.0.1:5500", "http://localhost:5500", "http://127.0.0.1:8000", "http://localhost:8000"]
+    # Tauri 2 uses this fixed HTTPS origin for packaged Windows WebView2 builds.
+    # Keep it separate so its cross-site cookie policy can be scoped to desktop.
+    DESKTOP_APP_ORIGINS: list[str] = ["https://tauri.localhost"]
     
     DATABASE_URL: str
     
@@ -22,6 +25,7 @@ class Settings(BaseSettings):
     SUPABASE_STORAGE_BUCKET: str = "crm-attachments"
     FRONTEND_URL: str = "http://localhost:5173"
     SESSION_COOKIE_NAME: str = "crm_session"
+    SESSION_COOKIE_SAMESITE: str = "lax"
     SESSION_HOURS: int = 8
     REMEMBER_DAYS: int = 30
     COOKIE_SECURE: bool = False
@@ -42,6 +46,12 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def production_safety(self):
+        if self.SESSION_COOKIE_SAMESITE.lower() not in {"lax", "none"}:
+            raise ValueError("SESSION_COOKIE_SAMESITE must be lax or none")
+        if self.SESSION_COOKIE_SAMESITE.lower() == "none" and not self.COOKIE_SECURE:
+            raise ValueError("SameSite=None session cookies require COOKIE_SECURE=true")
+        if any(not origin.startswith("https://") or "*" in origin or origin.endswith("/") for origin in self.DESKTOP_APP_ORIGINS):
+            raise ValueError("Desktop app origins must be explicit HTTPS origins without a trailing slash")
         if self.AUTH_PROVIDER not in {"legacy", "supabase"}:
             raise ValueError("AUTH_PROVIDER must be legacy or supabase")
         if self.ENVIRONMENT == "production":
@@ -55,7 +65,7 @@ class Settings(BaseSettings):
                 raise ValueError("Production requires persistent PostgreSQL")
             if len(self.JWT_SECRET_KEY)<32 or not self.SUPABASE_URL.startswith("https://"):
                 raise ValueError("Production requires a strong session encryption key and HTTPS identity provider")
-            if any(not origin.startswith('https://') or '*' in origin for origin in self.CORS_ORIGINS):
+            if any(not origin.startswith('https://') or '*' in origin for origin in [*self.CORS_ORIGINS, *self.DESKTOP_APP_ORIGINS]):
                 raise ValueError('Production CORS origins must be explicit HTTPS origins')
             self.ALLOW_SELF_REGISTRATION = False
         return self

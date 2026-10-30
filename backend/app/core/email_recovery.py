@@ -6,6 +6,7 @@ import secrets
 from cryptography.fernet import InvalidToken
 from fastapi import HTTPException
 from app.core.config import settings
+from app.core.cookies import session_cookie_samesite, session_cookie_secure
 from app.core.sessions import cipher
 
 RECOVERY_TTL = 3600
@@ -22,9 +23,9 @@ def start_recovery(email):
     return challenge, state
 
 
-def save_recovery(response, state):
+def save_recovery(response, state, request):
     response.set_cookie(cookie_name(), state, max_age=RECOVERY_TTL, path="/api/v1/auth",
-                        secure=settings.COOKIE_SECURE, httponly=True, samesite="lax")
+                        secure=session_cookie_secure(request), httponly=True, samesite=session_cookie_samesite(request))
     response.headers["Cache-Control"] = "no-store"
 
 
@@ -38,6 +39,6 @@ def read_recovery(request):
         raise HTTPException(400, "Request a new recovery email and open its link in the same browser.")
 
 
-def clear_recovery(response):
-    response.delete_cookie(cookie_name(), path="/api/v1/auth", secure=settings.COOKIE_SECURE,
-                           httponly=True, samesite="lax")
+def clear_recovery(response, request):
+    response.delete_cookie(cookie_name(), path="/api/v1/auth", secure=session_cookie_secure(request),
+                           httponly=True, samesite=session_cookie_samesite(request))
