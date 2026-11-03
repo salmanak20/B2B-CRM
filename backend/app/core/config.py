@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     ENVIRONMENT: str = "development"
     CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000", "https://b2-b-crm.vercel.app", "http://127.0.0.1:5500", "http://localhost:5500", "http://127.0.0.1:8000", "http://localhost:8000"]
+    # Tauri 2's packaged Windows WebView2 origin. Keep this allowlist fixed and exact.
+    DESKTOP_APP_ORIGINS: list[str] = ["https://tauri.localhost"]
     
     DATABASE_URL: str
     
@@ -32,6 +34,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def production_safety(self):
+        if self.DESKTOP_APP_ORIGINS != ["https://tauri.localhost"]:
+            raise ValueError("Desktop app origin must be exactly https://tauri.localhost")
         if self.AUTH_PROVIDER not in {"legacy", "supabase"}:
             raise ValueError("AUTH_PROVIDER must be legacy or supabase")
         if self.ENVIRONMENT == "production":
@@ -43,7 +47,7 @@ class Settings(BaseSettings):
                 raise ValueError("Production requires persistent PostgreSQL")
             if len(self.JWT_SECRET_KEY)<32 or not self.SUPABASE_URL.startswith("https://"):
                 raise ValueError("Production requires a strong session encryption key and HTTPS identity provider")
-            if any(not origin.startswith('https://') or '*' in origin for origin in self.CORS_ORIGINS):
+            if any(not origin.startswith('https://') or '*' in origin for origin in [*self.CORS_ORIGINS, *self.DESKTOP_APP_ORIGINS]):
                 raise ValueError('Production CORS origins must be explicit HTTPS origins')
             self.ALLOW_SELF_REGISTRATION = False
         return self

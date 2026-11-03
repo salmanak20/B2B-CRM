@@ -6,6 +6,7 @@ from pydantic import BaseModel, EmailStr, field_validator
 from sqlalchemy import select, delete
 from app.api.deps import SessionDep, CurrentActiveUser
 from app.core.config import settings
+from app.core.cookies import session_cookie_samesite, session_cookie_secure
 from app.core.security import verify_password, create_access_token
 from app.core.provider import auth_request
 from app.core.sessions import create_session, current_session, session_key, decrypt, revoke_user_sessions
@@ -75,7 +76,7 @@ def login(db:SessionDep,request:Request,response:Response,form:OAuth2PasswordReq
     previous=request.cookies.get(settings.SESSION_COOKIE_NAME)
     if previous:
         db.execute(delete(AuthSession).where(AuthSession.id==session_key(previous)))
-    create_session(db,response,user,remember,provider)
+    create_session(db,response,user,request,remember,provider)
     log_event(db,"Login",user.id,"User",user.id,"User signed in")
     result={"user":UserResponse.model_validate(user).model_dump(mode="json"),"token_type":"cookie",
             "expires_in":(settings.REMEMBER_DAYS*86400 if remember else settings.SESSION_HOURS*3600)}
@@ -100,7 +101,7 @@ def logout(db:SessionDep,request:Request,response:Response):
                     pass
             db.delete(session)
             db.commit()
-    response.delete_cookie(settings.SESSION_COOKIE_NAME,path="/api",secure=settings.COOKIE_SECURE,httponly=True,samesite="lax")
+    response.delete_cookie(settings.SESSION_COOKIE_NAME,path="/api",secure=session_cookie_secure(request),httponly=True,samesite=session_cookie_samesite(request))
 
 @router.post("/forgot-password")
 def forgot(body:EmailRequest,db:SessionDep,request:Request):
@@ -121,7 +122,7 @@ def recovery(body:RecoveryVerify,db:SessionDep,request:Request,response:Response
         raise HTTPException(400,"Invalid recovery link")
     data=auth_request("POST","/verify",{"token_hash":body.token_hash,"type":body.type})
     user=linked_user(db,data.get("user",{}))
-    create_session(db,response,user,provider=data,recovery=True)
+    create_session(db,response,user,request,provider=data,recovery=True)
     return {"message":"Link verified. Set a new password."}
 
 @router.post("/password")
@@ -139,5 +140,5 @@ def change_password(body:PasswordChange,db:SessionDep,request:Request,response:R
     auth_request("POST","/logout?scope=global",token=decrypt(session.access_token))
     revoke_user_sessions(db,current_user.id)
     log_event(db,"Password Changed",current_user.id,"User",current_user.id,"Password changed using identity provider")
-    response.delete_cookie(settings.SESSION_COOKIE_NAME,path="/api")
+    response.delete_cookie(settings.SESSION_COOKIE_NAME,path="/api",secure=session_cookie_secure(request),httponly=True,samesite=session_cookie_samesite(request))
     return {"message":"Password updated. Please sign in again."}

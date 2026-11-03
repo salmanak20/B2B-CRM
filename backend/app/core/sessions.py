@@ -3,9 +3,10 @@ import hashlib
 import secrets
 from datetime import datetime, timedelta, timezone
 from cryptography.fernet import Fernet, InvalidToken
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 from sqlalchemy import delete, select
 from app.core.config import settings
+from app.core.cookies import session_cookie_samesite, session_cookie_secure
 from app.core.provider import auth_request
 from app.models.session import AuthSession
 from app.models.user import User
@@ -31,7 +32,7 @@ def decrypt(value):
     except InvalidToken:
         raise HTTPException(401, "Session expired. Please sign in again.")
 
-def create_session(db, response, user, remember=False, provider=None, recovery=False):
+def create_session(db, response, user, request: Request, remember=False, provider=None, recovery=False):
     raw = secrets.token_urlsafe(48)
     seconds = (settings.REMEMBER_DAYS * 86400 if remember else settings.SESSION_HOURS * 3600)
     session = AuthSession(id=session_key(raw), user_id=user.id, expires_at=utcnow()+timedelta(seconds=seconds), recovery=recovery)
@@ -39,8 +40,8 @@ def create_session(db, response, user, remember=False, provider=None, recovery=F
         set_provider_tokens(session, provider)
     db.add(session)
     db.commit()
-    response.set_cookie(settings.SESSION_COOKIE_NAME, raw, httponly=True, secure=settings.COOKIE_SECURE,
-                        samesite="lax", path="/api", max_age=seconds if remember else None)
+    response.set_cookie(settings.SESSION_COOKIE_NAME, raw, httponly=True, secure=session_cookie_secure(request),
+                        samesite=session_cookie_samesite(request), path="/api", max_age=seconds if remember else None)
     response.headers["Cache-Control"] = "no-store"
     return session
 
