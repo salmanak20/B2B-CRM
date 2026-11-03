@@ -1,3 +1,4 @@
+from app.models.tenant import TenantOwned
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional
@@ -9,9 +10,9 @@ from sqlalchemy.sql import func
 from app.db.session import Base
 
 
-class Deal(Base):
+class Deal(TenantOwned, Base):
     __tablename__ = "deals"
-    __table_args__ = (
+    __tenant_extra_args__ = (
         CheckConstraint("value >= 0", name="ck_deals_value_non_negative"),
         CheckConstraint("probability >= 0 AND probability <= 100", name="ck_deals_probability_range"),
         CheckConstraint("status IN ('open', 'won', 'lost')", name="ck_deals_status_values"),
@@ -36,10 +37,10 @@ class Deal(Base):
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
 
     owner: Mapped["User"] = relationship(back_populates="deals")
-    company: Mapped[Optional["Company"]] = relationship(back_populates="deals")
-    contact: Mapped[Optional["Contact"]] = relationship(back_populates="deals")
-    lead: Mapped[Optional["Lead"]] = relationship(back_populates="deals")
-    pipeline: Mapped["Pipeline"] = relationship(back_populates="deals")
-    stage: Mapped["PipelineStage"] = relationship(back_populates="deals")
-    tasks: Mapped[list["Task"]] = relationship(back_populates="deal")
-    activities: Mapped[list["Activity"]] = relationship(back_populates="deal")
+    company: Mapped[Optional["Company"]] = relationship(foreign_keys="Deal.company_id", back_populates="deals")
+    contact: Mapped[Optional["Contact"]] = relationship(foreign_keys="Deal.contact_id", back_populates="deals")
+    lead: Mapped[Optional["Lead"]] = relationship(foreign_keys="Deal.lead_id", back_populates="deals")
+    pipeline: Mapped["Pipeline"] = relationship(foreign_keys="Deal.pipeline_id", back_populates="deals")
+    stage: Mapped["PipelineStage"] = relationship(foreign_keys="Deal.stage_id", back_populates="deals")
+    tasks: Mapped[list["Task"]] = relationship(foreign_keys="Task.deal_id", back_populates="deal")
+    activities: Mapped[list["Activity"]] = relationship(foreign_keys="Activity.deal_id", back_populates="deal")

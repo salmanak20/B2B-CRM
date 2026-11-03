@@ -1,3 +1,4 @@
+from app.models.tenant import TenantOwned
 from datetime import datetime
 from typing import Optional
 
@@ -8,9 +9,9 @@ from sqlalchemy.sql import func
 from app.db.session import Base
 
 
-class Task(Base):
+class Task(TenantOwned, Base):
     __tablename__ = "tasks"
-    __table_args__ = (
+    __tenant_extra_args__ = (
         CheckConstraint("priority IN ('low', 'medium', 'high', 'urgent')", name="ck_tasks_priority_values"),
         CheckConstraint(
             "status IN ('pending', 'in_progress', 'completed', 'cancelled')",
@@ -42,7 +43,7 @@ class Task(Base):
 
     owner: Mapped["User"] = relationship(foreign_keys=[owner_id], back_populates="owned_tasks")
     assigned_to: Mapped[Optional["User"]] = relationship(foreign_keys=[assigned_to_id], back_populates="assigned_tasks")
-    company: Mapped[Optional["Company"]] = relationship(back_populates="tasks")
-    contact: Mapped[Optional["Contact"]] = relationship(back_populates="tasks")
-    lead: Mapped[Optional["Lead"]] = relationship(back_populates="tasks")
-    deal: Mapped[Optional["Deal"]] = relationship(back_populates="tasks")
+    company: Mapped[Optional["Company"]] = relationship(foreign_keys="Task.company_id", back_populates="tasks")
+    contact: Mapped[Optional["Contact"]] = relationship(foreign_keys="Task.contact_id", back_populates="tasks")
+    lead: Mapped[Optional["Lead"]] = relationship(foreign_keys="Task.lead_id", back_populates="tasks")
+    deal: Mapped[Optional["Deal"]] = relationship(foreign_keys="Task.deal_id", back_populates="tasks")

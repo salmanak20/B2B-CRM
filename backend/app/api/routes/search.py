@@ -12,7 +12,8 @@ from app.api.ownership import READ_ALL_CRM_ROLES
 
 router = APIRouter()
 
-@router.get("/", response_model=dict)
+@router.get("", response_model=dict)
+@router.get("/", response_model=dict, include_in_schema=False)
 def global_search(
     q: str,
     db: SessionDep,

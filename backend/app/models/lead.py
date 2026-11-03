@@ -1,3 +1,4 @@
+from app.models.tenant import TenantOwned
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, Integer, Numeric, ForeignKey, DateTime, Text
 from sqlalchemy.sql import func
@@ -6,7 +7,7 @@ from decimal import Decimal
 from typing import Optional
 from app.db.session import Base
 
-class Lead(Base):
+class Lead(TenantOwned, Base):
     __tablename__ = "leads"
     
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
@@ -25,8 +26,8 @@ class Lead(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
     
     owner: Mapped["User"] = relationship(back_populates="leads")
-    company: Mapped["Company"] = relationship(back_populates="leads")
-    contact: Mapped["Contact"] = relationship(back_populates="leads")
-    deals: Mapped[list["Deal"]] = relationship(back_populates="lead")
-    tasks: Mapped[list["Task"]] = relationship(back_populates="lead")
-    activities: Mapped[list["Activity"]] = relationship(back_populates="lead")
+    company: Mapped["Company"] = relationship(foreign_keys="Lead.company_id", back_populates="leads")
+    contact: Mapped["Contact"] = relationship(foreign_keys="Lead.contact_id", back_populates="leads")
+    deals: Mapped[list["Deal"]] = relationship(foreign_keys="Deal.lead_id", back_populates="lead")
+    tasks: Mapped[list["Task"]] = relationship(foreign_keys="Task.lead_id", back_populates="lead")
+    activities: Mapped[list["Activity"]] = relationship(foreign_keys="Activity.lead_id", back_populates="lead")

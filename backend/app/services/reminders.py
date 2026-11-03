@@ -1,6 +1,7 @@
 import hashlib
 import asyncio
 import logging
+from fastapi import HTTPException
 from datetime import datetime,timezone,timedelta
 from sqlalchemy import select,delete
 from sqlalchemy.exc import IntegrityError
@@ -10,7 +11,13 @@ from app.models.session import AuthSession,RateBucket
 from app.models.task import Task
 
 def deliver_due(db,user_id=None):
+    from app.db.tenant_session import organization_id
+    from app.models.membership import Membership
+    from app.models.user import User
+    org=organization_id(db)
     query=select(Task).where(Task.assigned_to_id.is_not(None),Task.status.in_(['pending','in_progress']),Task.due_date<=datetime.now(timezone.utc))
+    query=query.where(Task.assigned_to_id.in_(select(Membership.user_id).join(User).where(
+        Membership.organization_id==org,Membership.is_active.is_(True),User.is_active.is_(True))))
     if user_id is not None:query=query.where(Task.assigned_to_id==user_id)
     tasks=db.scalars(query).all();count=0
     for task in tasks:
@@ -30,11 +37,22 @@ def deliver_due(db,user_id=None):
 
 def tick():
     from app.db.session import SessionLocal
+    from app.models.organization import Organization
+    from app.core.config import settings
+    if not settings.TENANT_ISOLATION_ENABLED:
+        return
     with SessionLocal() as db:
-        deliver_due(db)
+        organizations=list(db.scalars(select(Organization.id).where(Organization.is_suspended.is_(False))))
         db.execute(delete(AuthSession).where(AuthSession.expires_at<datetime.now(timezone.utc)))
         db.execute(delete(RateBucket).where(RateBucket.window_start<datetime.now(timezone.utc)-timedelta(days=2)))
         db.commit()
+    for org in organizations:
+        with SessionLocal() as db:
+            db.info["organization_id"]=org
+            try:deliver_due(db)
+            except HTTPException as error:
+                db.rollback()
+                if error.status_code!=403:raise
 
 async def reminder_loop():
     while True:

@@ -14,6 +14,8 @@ from app.models.pipeline_stage import PipelineStage
 from app.models.role import Role
 from app.models.task import Task
 from app.models.user import User
+from app.models.membership import Membership
+from app.db.tenant_session import organization_id
 
 GLOBAL_DASHBOARD_ROLES = {"admin", "administrator", "sales_manager", "viewer"}
 
@@ -420,7 +422,9 @@ def get_team_performance(db: Session, current_user: User, start_date: date | Non
             func.coalesce(revenue.c.revenue, 0),
             func.coalesce(tasks.c.completed_tasks, 0),
         )
-        .join(Role, User.role_id == Role.id)
+        .join(Membership, and_(Membership.user_id == User.id,
+            Membership.organization_id == organization_id(db),Membership.is_active.is_(True)))
+        .join(Role, Membership.permission_role_name == Role.name)
         .outerjoin(leads, leads.c.user_id == User.id)
         .outerjoin(deals, deals.c.user_id == User.id)
         .outerjoin(revenue, revenue.c.user_id == User.id)

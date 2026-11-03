@@ -1,0 +1,126 @@
+name: SaaS checks
+
+on:
+  push:
+    branches: [feature/multi-tenant-saas]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: saas-checks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (${{ matrix.suite }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: isolation
+            tests: tests/test_tenant_isolation.py
+          - suite: integration
+            tests: tests/test_saas_integration.py
+          - suite: guards
+            tests: tests/test_platform_bootstrap.py tests/test_hosted_pooling.py tests/test_provider_errors.py tests/test_business_onboarding.py::test_default_and_production_rollout_gate
+          - suite: platform
+            tests: tests/test_platform_admin.py
+          - suite: usage
+            tests: tests/test_usage_limits.py
+          - suite: payment-free
+            tests: tests/test_payment_free_launch.py
+          - suite: free-pilot
+            tests: tests/test_free_pilot.py
+    services:
+      postgres:
+        image: postgres@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3
+        env:
+          POSTGRES_USER: crm_test
+          POSTGRES_PASSWORD: ci-fixture-only
+          POSTGRES_DB: crm_test_ci
+        ports:
+          - 127.0.0.1:5432:5432
+        options: >-
+          --health-cmd "pg_isready -U crm_test -d crm_test_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      # Disposable fixtures only; no repository/provider secrets are consumed.
+      DATABASE_URL: postgresql+psycopg://crm_test:ci-fixture-only@127.0.0.1:5432/crm_test_ci
+      CRM_TEST_MIGRATION_URL: postgresql+psycopg://crm_test:ci-fixture-only@127.0.0.1:5432/crm_test_ci
+      CRM_TEST_RUN: '1'
+      JWT_SECRET_KEY: isolated-ci-fixture-key-not-used-by-any-deployment
+      ENVIRONMENT: development
+      AUTH_PROVIDER: legacy
+      DEBUG: 'false'
+      COOKIE_SECURE: 'false'
+      ALLOW_SELF_REGISTRATION: 'true'
+      TENANT_ISOLATION_ENABLED: 'false'
+      BUSINESS_REGISTRATION_ENABLED: 'false'
+      AUTH_EMAIL_CONFIGURATION_VERIFIED: 'false'
+      DUE_NOTIFICATIONS_ENABLED: 'false'
+      SUPABASE_URL: https://supabase.invalid
+      SUPABASE_PUBLISHABLE_KEY: isolated-fixture
+      SUPABASE_SERVICE_ROLE_KEY: isolated-fixture
+      SUPABASE_STORAGE_BUCKET: isolated-fixture
+      LEMON_SQUEEZY_TEST_ENABLED: 'false'
+      LEMON_SQUEEZY_TEST_API_KEY: isolated-fixture
+      LEMON_SQUEEZY_TEST_STORE_ID: isolated-fixture
+      LEMON_SQUEEZY_TEST_WEBHOOK_SECRET: isolated-fixture
+      LEMON_SQUEEZY_TEST_PLAN_IDS: '{}'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+      - run: python -m pip install -r requirements-dev.txt
+      - name: Verify isolated PostgreSQL 17 target
+        run: |
+          python - <<'PY'
+          import os
+          from sqlalchemy import create_engine, text
+          from app.db.tenant_backfill import staging_engine
+          assert os.environ['CRM_TEST_RUN'] == '1'
+          assert os.environ['DATABASE_URL'] == os.environ['CRM_TEST_MIGRATION_URL']
+          engine = staging_engine(os.environ['CRM_TEST_MIGRATION_URL'])
+          try:
+              with engine.connect() as db:
+                  assert 170000 <= int(db.scalar(text('SHOW server_version_num'))) < 180000
+                  assert db.scalar(text('SELECT current_database()')) == 'crm_test_ci'
+          finally:
+              engine.dispose()
+          PY
+      - name: Focused backend checks
+        run: python -m pytest -q ${{ matrix.tests }} --disable-warnings
+
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: stitch_crm_pro_enterprise_suite
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: stitch_crm_pro_enterprise_suite/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm run check

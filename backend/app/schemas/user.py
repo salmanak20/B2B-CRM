@@ -26,6 +26,8 @@ class UserUpdateAdmin(UserUpdate):
     is_active: Optional[bool] = None
 
 class UserResponse(UserBase):
+    organization_id: int | None = None
+    organization_role: str | None = None
     id: int
     role: RoleResponse
     is_active: bool

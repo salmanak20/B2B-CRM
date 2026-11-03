@@ -51,7 +51,7 @@ def roles(db:SessionDep,current_user:CurrentActiveUser):
 
 @router.get("/workspace")
 def workspace(db:SessionDep,current_user:CurrentActiveUser):
-    row=db.get(WorkspaceSettings,1)
+    row=db.scalar(select(WorkspaceSettings))
     return {"name":row.name if row else "CRM Pro","timezone":row.timezone if row else "UTC","currency":row.currency if row else "USD"}
 
 class WorkspaceUpdate(BaseModel):
@@ -64,21 +64,24 @@ class WorkspaceUpdate(BaseModel):
 def update_workspace(body:WorkspaceUpdate,db:SessionDep,current_user:CurrentActiveUser):
     try:ZoneInfo(body.timezone)
     except ZoneInfoNotFoundError:raise HTTPException(422,"Use a valid IANA timezone")
-    row=db.get(WorkspaceSettings,1)
+    row=db.scalar(select(WorkspaceSettings))
     if not row:
-        row=WorkspaceSettings(id=1,**body.model_dump());db.add(row)
+        row=WorkspaceSettings(**body.model_dump());db.add(row)
     else:
         for key,value in body.model_dump().items():setattr(row,key,value)
     db.commit()
-    log_event(db,"Workspace Updated",current_user.id,"Workspace",1,"Workspace name and timezone updated")
+    log_event(db,"Workspace Updated",current_user.id,"Workspace",row.id,"Workspace name and timezone updated")
     return body
 
 @router.get("/directory")
 def directory(db:SessionDep,current_user:CurrentActiveUser):
+    from app.models.membership import Membership
     # Names and IDs only; full account/email administration remains administrator-only.
     if current_user.role.name not in {"admin","sales_manager"}:
         return [{"id":current_user.id,"name":current_user.name}]
-    return [{"id":u.id,"name":u.name} for u in db.scalars(select(User).where(User.is_active.is_(True)).order_by(User.name)).all()]
+    return [{"id":u.id,"name":u.name} for u in db.scalars(select(User).join(Membership).where(
+        User.is_active.is_(True),Membership.organization_id==current_user.organization_id,
+        Membership.is_active.is_(True)).order_by(User.name)).all()]
 
 @router.get("/records/{entity}/{record_id}/related")
 def related(entity:str,record_id:int,db:SessionDep,current_user:CurrentActiveUser):
@@ -111,14 +114,19 @@ class RuleInput(BaseModel):
 def workflows(db:SessionDep,current_user:CurrentActiveUser):
     return db.scalars(select(WorkflowRule).order_by(WorkflowRule.id)).all()
 
-def validate_assignee(db,user_id):
+def validate_assignee(db,user_id,actor=None):
     if user_id:
+        from app.db.tenant_session import require_member
+        require_member(db,user_id)
+        if actor:
+            from app.api.ownership import validate_representative
+            validate_representative(db,actor,user_id)
         user=db.get(User,user_id)
         if not user or not user.is_active:raise HTTPException(422,"Choose an active assignee")
 
 @router.post("/workflows",dependencies=[Depends(require_role(["admin","sales_manager"]))])
 def create_rule(body:RuleInput,db:SessionDep,current_user:CurrentActiveUser):
-    validate_assignee(db,body.assigned_to_id)
+    validate_assignee(db,body.assigned_to_id,current_user)
     rule=WorkflowRule(**body.model_dump(),owner_id=current_user.id);db.add(rule);db.commit();db.refresh(rule)
     log_event(db,"Workflow Created",current_user.id,"Workflow",rule.id,rule.name)
     db.refresh(rule)
@@ -128,7 +136,7 @@ def create_rule(body:RuleInput,db:SessionDep,current_user:CurrentActiveUser):
 def update_rule(rule_id:int,body:RuleInput,db:SessionDep,current_user:CurrentActiveUser):
     rule=db.get(WorkflowRule,rule_id)
     if not rule:raise HTTPException(404,"Workflow not found")
-    validate_assignee(db,body.assigned_to_id)
+    validate_assignee(db,body.assigned_to_id,current_user)
     for key,value in body.model_dump().items():setattr(rule,key,value)
     db.commit();db.refresh(rule)
     log_event(db,"Workflow Updated",current_user.id,"Workflow",rule.id,rule.name)
@@ -145,6 +153,9 @@ def delete_rule(rule_id:int,db:SessionDep,current_user:CurrentActiveUser):
     return {"ok":True}
 
 def run_lead_workflows(db,lead):
+    from app.services.subscriptions import feature_allowed
+    from app.db.tenant_session import organization_id
+    if not feature_allowed(db,organization_id(db),'workflows'):return
     for rule in db.scalars(select(WorkflowRule).where(WorkflowRule.enabled.is_(True),WorkflowRule.trigger_status==lead.status)).all():
         if Decimal(lead.estimated_value or 0)<rule.min_value:continue
         if db.scalar(select(WorkflowRun).where(WorkflowRun.rule_id==rule.id,WorkflowRun.lead_id==lead.id)):continue
@@ -155,8 +166,10 @@ def run_lead_workflows(db,lead):
             with db.begin_nested():
                 db.add(task);db.flush();db.add(WorkflowRun(rule_id=rule.id,lead_id=lead.id,task_id=task.id));db.flush()
             db.commit()
-        except IntegrityError:
+        except IntegrityError as error:
             # The unique rule/lead key makes concurrent delivery idempotent.
+            if 'CRM_QUOTA:' in str(error.orig):
+                raise HTTPException(409,'Workflow or task limit reached. Contact platform administration.')
             continue
         notify_assignment(db,task)
 
